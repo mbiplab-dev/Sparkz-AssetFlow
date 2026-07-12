@@ -5,10 +5,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.authentication.models import UserRole
+from apps.organization.models import Department
+
 from . import services
-from .models import Asset
+from .models import Asset, HolderType, Holding, Transfer
 from .permissions import IsAssetManager
-from .serializers import AdjustStockSerializer, AssetSerializer
+from .serializers import (
+    AdjustStockSerializer,
+    AssetSerializer,
+    HoldingSerializer,
+    TransferSerializer,
+)
 
 
 @extend_schema_view(
@@ -74,3 +82,74 @@ class AssetViewSet(viewsets.ModelViewSet):
             performed_by=request.user,
         )
         return Response(AssetSerializer(updated).data)
+
+
+def _own_holder_filters(user):
+    """Q-expression fragments describing which Holding rows this user may see."""
+    if user.role == UserRole.ASSET_MANAGER:
+        return Q()
+    if user.role == UserRole.DEPARTMENT_HEAD:
+        dept = Department.objects.filter(head=user).first()
+        if not dept:
+            return Q(pk__in=[])
+        employee_ids = list(dept.employees.values_list("id", flat=True))
+        return Q(holder_type=HolderType.DEPARTMENT, holder_id=dept.id) | Q(
+            holder_type=HolderType.EMPLOYEE, holder_id__in=employee_ids
+        )
+    return Q(holder_type=HolderType.EMPLOYEE, holder_id=user.id)
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Resources / Holdings"], summary="List holdings"),
+    retrieve=extend_schema(tags=["Resources / Holdings"], summary="Get a holding"),
+)
+class HoldingViewSet(viewsets.ReadOnlyModelViewSet):
+    """Current-state view of who holds how much of each asset, scoped by role."""
+
+    queryset = Holding.objects.select_related("asset").all()
+    serializer_class = HoldingSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset().filter(_own_holder_filters(self.request.user))
+        asset_id = self.request.query_params.get("asset")
+        if asset_id:
+            qs = qs.filter(asset_id=asset_id)
+        return qs
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Resources / Transfers"], summary="List transfers (ledger)"),
+    retrieve=extend_schema(tags=["Resources / Transfers"], summary="Get a transfer"),
+)
+class TransferViewSet(viewsets.ReadOnlyModelViewSet):
+    """Immutable movement ledger, scoped by role the same way as HoldingViewSet."""
+
+    queryset = Transfer.objects.select_related("asset", "performed_by").all()
+    serializer_class = TransferSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.role == UserRole.ASSET_MANAGER:
+            pass
+        elif user.role == UserRole.DEPARTMENT_HEAD:
+            dept = Department.objects.filter(head=user).first()
+            if not dept:
+                qs = qs.none()
+            else:
+                employee_ids = list(dept.employees.values_list("id", flat=True))
+                qs = qs.filter(
+                    Q(from_holder_type=HolderType.DEPARTMENT, from_holder_id=dept.id)
+                    | Q(to_holder_type=HolderType.DEPARTMENT, to_holder_id=dept.id)
+                    | Q(from_holder_type=HolderType.EMPLOYEE, from_holder_id__in=employee_ids)
+                    | Q(to_holder_type=HolderType.EMPLOYEE, to_holder_id__in=employee_ids)
+                )
+        else:
+            qs = qs.filter(
+                Q(from_holder_type=HolderType.EMPLOYEE, from_holder_id=user.id)
+                | Q(to_holder_type=HolderType.EMPLOYEE, to_holder_id=user.id)
+            )
+        asset_id = self.request.query_params.get("asset")
+        if asset_id:
+            qs = qs.filter(asset_id=asset_id)
+        return qs
