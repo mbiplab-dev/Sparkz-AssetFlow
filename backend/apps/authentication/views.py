@@ -6,6 +6,7 @@ token/cookie handling to apps.authentication.tokens.
 
 from django.contrib.auth.hashers import make_password
 from django.db import IntegrityError
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -42,6 +43,11 @@ class RequestSignupOTPView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Request signup verification code",
+        request=SignupOTPRequestSerializer,
+    )
     def post(self, request):
         serializer = SignupOTPRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -52,8 +58,7 @@ class RequestSignupOTPView(APIView):
                 purpose="signup",
                 email=data["email"],
                 extra={
-                    "name": data["name"],
-                    "age": data["age"],
+                    "full_name": data["full_name"],
                     "password_hash": make_password(data["password"]),
                 },
             )
@@ -73,6 +78,12 @@ class VerifySignupOTPView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Verify signup code and create account",
+        request=OTPVerifySerializer,
+        responses={201: UserSerializer},
+    )
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -88,8 +99,7 @@ class VerifySignupOTPView(APIView):
             user = User.objects.create_user_from_hashed_password(
                 email=email,
                 password_hash=pending["password_hash"],
-                name=pending["name"],
-                age=pending["age"],
+                full_name=pending["full_name"],
             )
         except IntegrityError:
             return Response(
@@ -114,6 +124,11 @@ class RequestLoginOTPView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Request login verification code",
+        request=LoginOTPRequestSerializer,
+    )
     def post(self, request):
         serializer = LoginOTPRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -138,6 +153,12 @@ class VerifyLoginOTPView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Verify login code",
+        request=OTPVerifySerializer,
+        responses={200: UserSerializer},
+    )
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -170,6 +191,11 @@ class RequestPasswordResetOTPView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Request password-reset code",
+        request=PasswordResetRequestSerializer,
+    )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -202,6 +228,11 @@ class ConfirmPasswordResetView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Confirm password reset",
+        request=PasswordResetConfirmSerializer,
+    )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -233,6 +264,12 @@ class LoginView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Log in with email and password",
+        request=LoginSerializer,
+        responses={200: UserSerializer},
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -248,6 +285,11 @@ class RefreshView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Refresh access token",
+        request=None,
+    )
     def post(self, request):
         raw_refresh_token = get_refresh_token_from_request(request)
         if raw_refresh_token is None:
@@ -266,6 +308,7 @@ class LogoutView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(tags=["Authentication"], summary="Log out", request=None, responses={204: None})
     def post(self, request):
         raw_refresh_token = get_refresh_token_from_request(request)
         if raw_refresh_token is not None:
@@ -280,5 +323,10 @@ class MeView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Get the current user",
+        responses=UserSerializer,
+    )
     def get(self, request):
         return Response(UserSerializer(request.user).data)

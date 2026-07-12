@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "apps.authentication",
+    "apps.organization",
 ]
 
 MIDDLEWARE = [
@@ -135,9 +136,24 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Sparkz AssetFlow API",
-    "DESCRIPTION": "Authentication API for Sparkz AssetFlow.",
+    "DESCRIPTION": "Enterprise Asset & Resource Management System — REST API.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "TAGS": [
+        {"name": "Authentication", "description": "Signup, login, password reset, session."},
+        {
+            "name": "Organization / Departments",
+            "description": "Admin CRUD for departments (Screen 3 Tab A).",
+        },
+        {
+            "name": "Organization / Categories",
+            "description": "Admin CRUD for asset categories (Screen 3 Tab B).",
+        },
+        {
+            "name": "Organization / Employees",
+            "description": "Employee directory + role/status/department assignment (Screen 3 Tab C).",
+        },
+    ],
 }
 
 
