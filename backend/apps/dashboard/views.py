@@ -479,27 +479,63 @@ class DashboardNotificationsView(APIView):
                         "entity_id": t.pk,
                         "actor_name": _actor_name(t.performed_by),
                         "timestamp": t.created_at,
+                        "is_overdue": False,
                     }
                 )
 
-        # Activity log rows for a fuller feed.
+        # Open allocation requests older than 7 days → overdue_return notifications.
+        AllocationRequest = _model("resource_allocation", "AllocationRequest")
+        if AllocationRequest is not None:
+            week_ago = now - timedelta(days=7)
+            for ar in AllocationRequest.objects.select_related("asset", "requested_by").filter(
+                status__in=("open", "partially_fulfilled"),
+                created_at__lt=week_ago,
+            )[:20]:
+                items.append(
+                    {
+                        "id": f"overdue-req-{ar.pk}",
+                        "kind": "overdue_return",
+                        "title": "Overdue allocation request",
+                        "body": _truncate(
+                            f"Open request for {ar.quantity_requested} × {ar.asset} "
+                            f"(since {ar.created_at.date().isoformat()})"
+                        ),
+                        "entity": "allocation_request",
+                        "entity_id": ar.pk,
+                        "actor_name": _actor_name(ar.requested_by),
+                        "timestamp": ar.created_at,
+                        "is_overdue": True,
+                    }
+                )
+
+        # Activity log rows for a fuller feed (skip kinds we already emit richly).
         ActivityLog = _model("activity", "ActivityLog")
         if ActivityLog is not None:
             for log in ActivityLog.objects.select_related("actor").filter(created_at__gte=since)[
                 :30
             ]:
+                action = (log.action or "").lower()
+                if "book" in action:
+                    kind = "booking_created"
+                elif "maint" in action:
+                    kind = "maintenance_created"
+                elif "allocat" in action or "transfer" in action:
+                    kind = "asset_allocated"
+                elif "overdue" in action:
+                    kind = "overdue_return"
+                else:
+                    kind = "asset_allocated"
                 items.append(
                     {
                         "id": f"activity-{log.pk}",
-                        "kind": "asset_allocated"
-                        if "allocat" in (log.action or "")
-                        else "maintenance_created",
+                        "kind": kind,
                         "title": (log.action or "activity").replace(".", " ").title(),
                         "body": _truncate(log.message),
                         "entity": log.entity_type or "activity",
                         "entity_id": int(log.entity_id) if str(log.entity_id).isdigit() else 0,
                         "actor_name": _actor_name(log.actor),
                         "timestamp": log.created_at,
+                        "is_overdue": kind == "overdue_return",
                     }
                 )
 
@@ -508,4 +544,5 @@ class DashboardNotificationsView(APIView):
         for it in items:
             ts = it["timestamp"]
             it["timestamp"] = ts.isoformat() if hasattr(ts, "isoformat") else str(ts)
+            it.setdefault("is_overdue", False)
         return Response(items)

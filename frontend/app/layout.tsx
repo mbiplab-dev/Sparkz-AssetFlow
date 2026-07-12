@@ -7,6 +7,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Sparkz AssetFlow",
   description: "Enterprise asset & resource management",
+  // No site favicon — browsers will use a default blank/tab icon.
+  icons: {
+    icon: [],
+    shortcut: [],
+    apple: [],
+  },
 };
 
 export const viewport: Viewport = {

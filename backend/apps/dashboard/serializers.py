@@ -81,6 +81,7 @@ class NotificationItemSerializer(serializers.Serializer):
     entity_id = serializers.IntegerField()
     actor_name = serializers.CharField(allow_null=True, required=False)
     timestamp = serializers.DateTimeField()
+    is_overdue = serializers.BooleanField(required=False, default=False)
 
 
 class NotificationFeedSerializer(serializers.Serializer):

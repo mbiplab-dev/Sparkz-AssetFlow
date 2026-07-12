@@ -69,11 +69,8 @@ export function AppSidebarBrand({ onNavigate }: { onNavigate?: () => void }) {
     <Link
       href="/dashboard"
       onClick={onNavigate}
-      className="flex shrink-0 items-center gap-2.5 px-5 pt-5 pb-4"
+      className="flex shrink-0 items-center px-5 pt-5 pb-4 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
     >
-      <span className="bg-primary text-primary-foreground font-display flex size-7 shrink-0 items-center justify-center rounded-md text-sm font-bold">
-        AF
-      </span>
       <span className="font-display text-ink text-[17px] font-semibold tracking-tight">
         AssetFlow
       </span>
@@ -88,7 +85,7 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const items = NAV_ITEMS.filter((item) => !item.capability || can(user, item.capability));
 
   return (
-    <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden px-3 py-2">
+    <nav className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto px-3 py-2">
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (

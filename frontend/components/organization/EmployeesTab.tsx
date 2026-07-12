@@ -54,14 +54,15 @@ import {
 } from "@/lib/api/organization";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { roleLabel } from "@/lib/auth/permissions";
 import { StatusBadge } from "./StatusBadge";
 
-const ROLE_LABELS: Record<EmployeeRole, string> = {
-  admin: "Admin",
-  asset_manager: "Asset Manager",
-  department_head: "Department Head",
-  employee: "Employee",
-};
+const EMPLOYEE_ROLES: EmployeeRole[] = [
+  "admin",
+  "asset_manager",
+  "department_head",
+  "employee",
+];
 
 const ROLE_TINTS: Record<EmployeeRole, string> = {
   admin: "border-accent-purple/30 bg-accent-purple/20 text-accent-purple-deep",
@@ -258,7 +259,7 @@ export function EmployeesTab() {
                     <TableCell className="text-ink-muted">{emp.department_name || "—"}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("rounded-full", ROLE_TINTS[emp.role])}>
-                        {ROLE_LABELS[emp.role]}
+                        {roleLabel(emp.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -306,9 +307,9 @@ export function EmployeesTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(ROLE_LABELS) as EmployeeRole[]).map((role) => (
+                  {EMPLOYEE_ROLES.map((role) => (
                     <SelectItem key={role} value={role}>
-                      {ROLE_LABELS[role]}
+                      {roleLabel(role)}
                     </SelectItem>
                   ))}
                 </SelectContent>

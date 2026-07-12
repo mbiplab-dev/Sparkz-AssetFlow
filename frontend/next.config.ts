@@ -10,6 +10,10 @@ import type { NextConfig } from "next";
 const backendOrigin = process.env.BACKEND_ORIGIN?.replace(/\/$/, "") || "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
+  // Monorepo: keep Turbopack rooted on this package (avoids parent lockfile confusion).
+  turbopack: {
+    root: process.cwd(),
+  },
   skipTrailingSlashRedirect: true,
   async redirects() {
     return [

@@ -3,14 +3,7 @@
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import type { UserRole } from "@/lib/auth/authApi";
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Admin",
-  asset_manager: "Asset Manager",
-  department_head: "Department Head",
-  employee: "Employee",
-};
+import { roleLabel } from "@/lib/auth/permissions";
 
 function greetingFor(hour: number): string {
   if (hour < 12) return "Good morning";
@@ -49,7 +42,7 @@ export function DashboardHeader({
         </h2>
         <p className="text-ink-muted text-sm">
           You&apos;re signed in as{" "}
-          <span className="text-ink-secondary font-medium">{ROLE_LABELS[user.role]}</span>.
+          <span className="text-ink-secondary font-medium">{roleLabel(user.role)}</span>.
           <span className="hidden sm:inline"> Here&apos;s your operational snapshot.</span>
         </p>
       </div>

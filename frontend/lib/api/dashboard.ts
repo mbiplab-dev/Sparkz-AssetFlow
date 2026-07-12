@@ -79,6 +79,7 @@ export type NotificationItem = {
   entity_id: number;
   actor_name?: string | null;
   timestamp: string;
+  /** Present when the event represents something past due. */
   is_overdue?: boolean;
 };
 

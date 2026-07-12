@@ -23,14 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
-import type { UserRole } from "@/lib/auth/authApi";
-
-export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Admin",
-  asset_manager: "Asset Manager",
-  department_head: "Department Head",
-  employee: "Employee",
-};
+import { roleLabel } from "@/lib/auth/permissions";
 
 function initialsOf(name: string): string {
   return (
@@ -85,7 +78,7 @@ export function AppHeader({ title }: { title: string }) {
             variant="secondary"
             className="border-hairline text-ink-secondary hidden border sm:inline-flex"
           >
-            <span className="max-w-[10rem] truncate lg:max-w-none">{ROLE_LABELS[user.role]}</span>
+            <span className="max-w-[10rem] truncate lg:max-w-none">{roleLabel(user.role)}</span>
           </Badge>
           <DropdownMenu>
             <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2">
@@ -103,7 +96,7 @@ export function AppHeader({ title }: { title: string }) {
                     {user.email}
                   </span>
                   <span className="text-muted-foreground mt-1 text-xs font-normal sm:hidden">
-                    {ROLE_LABELS[user.role]}
+                    {roleLabel(user.role)}
                   </span>
                 </div>
               </DropdownMenuLabel>
