@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.authentication",
     "apps.organization",
+    "apps.assets",
+    "apps.dashboard",
     "apps.resource_allocation",
 ]
 
@@ -153,6 +155,11 @@ SPECTACULAR_SETTINGS = {
         {
             "name": "Organization / Employees",
             "description": "Employee directory + role/status/department assignment (Screen 3 Tab C).",
+        },
+        {"name": "Assets", "description": "Asset registration, directory, and lifecycle (Screen 4)."},
+        {
+            "name": "Assets / Locations",
+            "description": "Physical locations for assets and audit scoping.",
         },
     ],
 }

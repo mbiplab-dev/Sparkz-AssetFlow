@@ -82,6 +82,7 @@
 
 /* Notion palette mapped onto shadcn semantic tokens (light-only theme). */
 :root {
+  color-scheme: light;
   --background: #f6f5f4;
   --foreground: #191918;
   --card: #ffffff;
