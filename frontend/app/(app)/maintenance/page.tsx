@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Wrench } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { DomainIcons, IconBadge } from "@/components/icons";
 import { DiagnoseDialog } from "@/components/maintenance/DiagnoseDialog";
 import { KanbanCard } from "@/components/maintenance/KanbanCard";
 import { RaiseRequestDialog } from "@/components/maintenance/RaiseRequestDialog";
@@ -142,9 +143,13 @@ export default function MaintenancePage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <span className="bg-primary/10 flex size-8 items-center justify-center rounded-lg">
-              <Wrench className="text-primary size-4" />
-            </span>
+            <IconBadge
+              icon={DomainIcons.maintenance}
+              size="sm"
+              className="size-8"
+              tint="text-primary"
+              bg="bg-primary/10"
+            />
             <h2 className="font-display text-ink text-2xl font-bold tracking-tight">Maintenance</h2>
           </div>
           <p className="text-ink-muted text-sm">

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Inbox } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { AppIcon, DomainIcons, IconBadge } from "@/components/icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ActivityItem } from "@/lib/api/dashboard";
-import { cn } from "@/lib/utils";
 import { activityIcon } from "./activityIcon";
 
 function relativeTime(iso: string): string {
@@ -26,9 +26,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
       <CardContent>
         {empty ? (
           <div className="flex flex-col items-center gap-1.5 py-8 text-center">
-            <span className="bg-muted flex size-9 items-center justify-center rounded-full">
-              <Inbox className="text-ink-faint size-5" />
-            </span>
+            <IconBadge icon={DomainIcons.activity} size="md" className="rounded-full" />
             <p className="text-ink-secondary text-sm font-medium">No activity yet</p>
             <p className="text-ink-muted text-sm">
               Allocations, bookings, and maintenance events will appear here.
@@ -37,20 +35,19 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
         ) : (
           <ul className="flex flex-col">
             {items.map((item) => {
-              const { icon: Icon, tint, bg } = activityIcon(item.message);
+              const { icon, tint, bg } = activityIcon(item.message);
               return (
                 <li
                   key={item.id}
                   className="border-border flex items-start gap-2.5 border-b py-2.5 last:border-b-0 sm:items-center sm:gap-3"
                 >
-                  <span
-                    className={cn(
-                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md sm:mt-0",
-                      bg,
-                    )}
-                  >
-                    <Icon className={cn("size-3.5", tint)} />
-                  </span>
+                  <IconBadge
+                    icon={icon}
+                    tint={tint}
+                    bg={bg}
+                    size="sm"
+                    className="mt-0.5 sm:mt-0"
+                  />
                   <span className="text-ink-secondary min-w-0 flex-1 text-sm sm:truncate">
                     {item.message}
                   </span>
@@ -68,7 +65,10 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
           className="group text-primary hover:bg-muted/70 mt-3 flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-colors"
         >
           View activity logs
-          <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          <AppIcon
+            icon={ArrowRight}
+            className="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
+          />
         </Link>
       </CardContent>
     </Card>

@@ -2,21 +2,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  AlarmClock,
-  ArrowLeftRight,
-  Bell,
-  BellOff,
-  CalendarClock,
-  CheckCheck,
-  Package,
-  RefreshCw,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
+import { BellOff, CheckCheck, RefreshCw, type LucideIcon } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday, startOfDay } from "date-fns";
 import { toast } from "sonner";
 
+import { AppIcon, DomainIcons, DomainTints, IconBadge } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,41 +50,36 @@ function kindMeta(kind: NotificationKind): {
 } {
   if (kind.startsWith("maintenance")) {
     return {
-      icon: Wrench,
+      icon: DomainIcons.maintenance,
       label: "Maintenance",
-      tint: "text-accent-orange",
-      bg: "bg-accent-orange/12",
+      ...DomainTints.orange,
     };
   }
   if (kind.startsWith("booking")) {
     return {
-      icon: CalendarClock,
+      icon: DomainIcons.booking,
       label: "Booking",
-      tint: "text-accent-teal",
-      bg: "bg-accent-teal/12",
+      ...DomainTints.teal,
     };
   }
   if (kind === "overdue_return" || kind.startsWith("overdue")) {
     return {
-      icon: AlarmClock,
+      icon: DomainIcons.overdue,
       label: "Overdue",
-      tint: "text-destructive",
-      bg: "bg-destructive/10",
+      ...DomainTints.danger,
     };
   }
   if (kind === "asset_allocated" || kind.includes("transfer")) {
     return {
-      icon: ArrowLeftRight,
+      icon: DomainIcons.allocation,
       label: "Allocation",
-      tint: "text-accent-sky",
-      bg: "bg-accent-sky/12",
+      ...DomainTints.sky,
     };
   }
   return {
-    icon: Package,
+    icon: DomainIcons.activity,
     label: "Activity",
-    tint: "text-ink-muted",
-    bg: "bg-muted",
+    ...DomainTints.muted,
   };
 }
 
@@ -230,7 +215,10 @@ export default function NotificationsPage() {
             disabled={refreshing || loading}
             aria-label="Refresh notifications"
           >
-            <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
+            <AppIcon
+              icon={RefreshCw}
+              className={cn("size-3.5", refreshing && "animate-spin")}
+            />
             Refresh
           </Button>
           <Button
@@ -241,7 +229,7 @@ export default function NotificationsPage() {
             onClick={markAllRead}
             disabled={unreadCount === 0 || loading}
           >
-            <CheckCheck className="size-3.5" />
+            <AppIcon icon={CheckCheck} className="size-3.5" />
             Mark all read
           </Button>
         </div>
@@ -305,7 +293,7 @@ export default function NotificationsPage() {
         />
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={Bell}
+          icon={DomainIcons.notifications}
           title={filter === "all" ? "No notifications yet" : `No ${filter} notifications`}
           description={
             filter === "all"
@@ -352,14 +340,13 @@ function NotificationRow({ item, unread }: { item: NotificationItem; unread: boo
 
   const content = (
     <>
-      <div
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-xl",
-          overdue ? "bg-destructive/10 text-destructive" : cn(meta.bg, meta.tint),
-        )}
-      >
-        <Icon className="size-4" aria-hidden />
-      </div>
+      <IconBadge
+        icon={Icon}
+        size="lg"
+        className="size-10"
+        tint={overdue ? DomainTints.danger.tint : meta.tint}
+        bg={overdue ? DomainTints.danger.bg : meta.bg}
+      />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">

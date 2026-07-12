@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Building2, Package, Shield, User } from "lucide-react";
+import { AppIcon, DomainIcons } from "@/components/icons";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ const DEMO_ACCOUNTS = [
     description: "Full org setup & all modules",
     email: "admin@assetflow.local",
     password: "Admin@12345",
-    icon: Shield,
+    icon: DomainIcons.secure,
     accent: "border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary",
   },
   {
@@ -38,7 +38,7 @@ const DEMO_ACCOUNTS = [
     description: "Register, allocate, maintenance",
     email: "manager.eng@assetflow.local",
     password: "Demo@12345",
-    icon: Package,
+    icon: DomainIcons.assets,
     accent: "border-accent-teal/40 bg-accent-teal/10 hover:bg-accent-teal/15 text-accent-teal",
   },
   {
@@ -47,7 +47,7 @@ const DEMO_ACCOUNTS = [
     description: "Dept approvals & bookings",
     email: "head.it@assetflow.local",
     password: "Demo@12345",
-    icon: Building2,
+    icon: DomainIcons.organization,
     accent:
       "border-accent-purple-deep/25 bg-accent-purple/15 hover:bg-accent-purple/25 text-accent-purple-deep",
   },
@@ -57,7 +57,7 @@ const DEMO_ACCOUNTS = [
     description: "Own assets, book, raise requests",
     email: "employee1@assetflow.local",
     password: "Demo@12345",
-    icon: User,
+    icon: DomainIcons.people,
     accent:
       "border-accent-orange/35 bg-accent-orange/10 hover:bg-accent-orange/15 text-accent-orange-deep",
   },
@@ -214,7 +214,6 @@ export default function LoginPage() {
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {DEMO_ACCOUNTS.map((account) => {
-              const Icon = account.icon;
               const busy = demoBusy === account.id;
               return (
                 <button
@@ -228,8 +227,8 @@ export default function LoginPage() {
                     account.accent,
                   )}
                 >
-                  <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-white/70">
-                    <Icon className="size-3.5" />
+                  <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-white/70 ring-1 ring-inset ring-black/[0.04]">
+                    <AppIcon icon={account.icon} className="size-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="text-ink block text-sm font-semibold">

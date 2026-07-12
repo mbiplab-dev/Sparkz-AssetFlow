@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeftRight, MoreHorizontal, Package, Plus, RotateCcw, Search } from "lucide-react";
+import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
+import { AppIcon, DomainIcons, IconBadge } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -346,9 +347,12 @@ export default function AllocationPage() {
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="bg-accent-sky/15 flex size-9 items-center justify-center rounded-xl">
-            <ArrowLeftRight className="text-accent-sky size-4" />
-          </span>
+          <IconBadge
+            icon={DomainIcons.allocation}
+            size="md"
+            tint="text-accent-sky"
+            bg="bg-accent-sky/15"
+          />
           <h1 className="text-ink text-xl font-semibold">
             {isEmployee ? "My allocations" : "Allocation & Transfer"}
           </h1>
@@ -362,7 +366,10 @@ export default function AllocationPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative">
-          <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+          <AppIcon
+            icon={Search}
+            className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+          />
           <Input
             placeholder="Search asset or holder…"
             value={search}
@@ -391,9 +398,12 @@ export default function AllocationPage() {
             </div>
           ) : filteredHoldings.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-14 text-center">
-              <span className="bg-accent-sky/15 flex size-11 items-center justify-center rounded-xl">
-                <Package className="text-accent-sky size-5" />
-              </span>
+              <IconBadge
+                icon={DomainIcons.assets}
+                size="lg"
+                tint="text-accent-sky"
+                bg="bg-accent-sky/15"
+              />
               <p className="text-ink-secondary text-sm font-medium">
                 {isEmployee ? "No assets allocated to you" : "No current holdings"}
               </p>
@@ -457,7 +467,7 @@ export default function AllocationPage() {
                             <DropdownMenuContent align="end">
                               {canInitiateReturn && (
                                 <DropdownMenuItem onSelect={() => openReturn(h)}>
-                                  <RotateCcw />
+                                  <AppIcon icon={DomainIcons.return} />
                                   Return
                                 </DropdownMenuItem>
                               )}
@@ -475,7 +485,7 @@ export default function AllocationPage() {
                                 <>
                                   {canInitiateReturn && <DropdownMenuSeparator />}
                                   <DropdownMenuItem onSelect={() => openTransfer(h)}>
-                                    <ArrowLeftRight />
+                                    <AppIcon icon={DomainIcons.allocation} />
                                     Initiate transfer
                                   </DropdownMenuItem>
                                 </>

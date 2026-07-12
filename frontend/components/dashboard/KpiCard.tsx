@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, type LucideIcon } from "lucide-react";
+import { AppIcon, IconBadge } from "@/components/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ export type KpiCardSpec = {
 };
 
 export function KpiCard({ spec, value }: { spec: KpiCardSpec; value: number | null }) {
-  const { label, href, icon: Icon, tint, bg } = spec;
+  const { label, href, icon, tint, bg } = spec;
 
   return (
     <Link href={href} className="group block min-w-0 focus-visible:outline-none">
@@ -30,14 +31,14 @@ export function KpiCard({ spec, value }: { spec: KpiCardSpec; value: number | nu
             <span className="text-ink-muted line-clamp-2 text-xs font-medium sm:text-sm">
               {label}
             </span>
-            <span
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-md sm:size-7",
-                bg,
-              )}
-            >
-              <Icon className={cn("size-3.5 sm:size-4", tint)} />
-            </span>
+            <IconBadge
+              icon={icon}
+              tint={tint}
+              bg={bg}
+              size="sm"
+              className="sm:size-8 sm:rounded-lg"
+              iconClassName="sm:size-4"
+            />
           </div>
 
           <div className="flex items-end justify-between gap-2">
@@ -49,7 +50,8 @@ export function KpiCard({ spec, value }: { spec: KpiCardSpec; value: number | nu
                 className="font-display text-ink text-2xl font-bold tracking-tight sm:text-3xl"
               />
             )}
-            <ArrowUpRight
+            <AppIcon
+              icon={ArrowUpRight}
               className={cn(
                 "size-4 shrink-0 translate-y-1 opacity-0 transition-all duration-200 ease-out",
                 "text-ink-faint group-hover:translate-y-0 group-hover:opacity-100",

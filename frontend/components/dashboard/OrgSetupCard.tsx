@@ -1,30 +1,27 @@
 import Link from "next/link";
-import { ArrowRight, Building2, LayoutGrid, Users } from "lucide-react";
+import { ArrowRight, LayoutGrid } from "lucide-react";
+import { AppIcon, DomainIcons, DomainTints, IconBadge } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 const STEPS = [
   {
     label: "Departments",
     desc: "Create teams and assign heads",
-    icon: Building2,
-    tint: "text-accent-sky",
-    bg: "bg-accent-sky/15",
+    icon: DomainIcons.organization,
+    ...DomainTints.sky,
   },
   {
     label: "Asset categories",
     desc: "Electronics, furniture, vehicles…",
     icon: LayoutGrid,
-    tint: "text-accent-teal",
-    bg: "bg-accent-teal/15",
+    ...DomainTints.teal,
   },
   {
     label: "Employee directory",
     desc: "Promote heads & asset managers",
-    icon: Users,
-    tint: "text-accent-purple-deep",
-    bg: "bg-accent-purple/25",
+    icon: DomainIcons.people,
+    ...DomainTints.purple,
   },
 ];
 
@@ -40,22 +37,21 @@ export function OrgSetupCard() {
           use.
         </p>
         <ul className="flex flex-col gap-1">
-          {STEPS.map(({ label, desc, icon: Icon, tint, bg }) => (
+          {STEPS.map(({ label, desc, icon, tint, bg }) => (
             <li key={label}>
               <Link
                 href="/organization"
                 className="group hover:bg-muted/70 -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors"
               >
-                <span
-                  className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", bg)}
-                >
-                  <Icon className={cn("size-4", tint)} />
-                </span>
+                <IconBadge icon={icon} tint={tint} bg={bg} size="sm" className="size-8" />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-ink-secondary text-sm font-medium">{label}</span>
                   <span className="text-ink-muted truncate text-xs">{desc}</span>
                 </span>
-                <ArrowRight className="text-ink-faint size-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+                <AppIcon
+                  icon={ArrowRight}
+                  className="text-ink-faint size-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
+                />
               </Link>
             </li>
           ))}
@@ -63,7 +59,7 @@ export function OrgSetupCard() {
         <Button asChild className="w-full self-start rounded-full sm:w-auto">
           <Link href="/organization">
             Set up organization
-            <ArrowRight />
+            <AppIcon icon={ArrowRight} />
           </Link>
         </Button>
       </CardContent>

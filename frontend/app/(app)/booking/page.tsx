@@ -11,7 +11,8 @@ import {
   parseISO,
   startOfWeek,
 } from "date-fns";
-import { CalendarClock, ChevronLeft, ChevronRight, MapPin, Plus, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Plus, Tag } from "lucide-react";
+import { AppIcon, DomainIcons, IconBadge } from "@/components/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -100,9 +101,13 @@ export default function BookingPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <span className="bg-primary/10 flex size-8 items-center justify-center rounded-lg">
-              <CalendarClock className="text-primary size-4" />
-            </span>
+            <IconBadge
+              icon={DomainIcons.booking}
+              size="sm"
+              className="size-8"
+              tint="text-primary"
+              bg="bg-primary/10"
+            />
             <h2 className="font-display text-ink text-2xl font-bold tracking-tight">
               Resource Booking
             </h2>
@@ -133,7 +138,7 @@ export default function BookingPage() {
         {/* Resource list */}
         <Card className="flex flex-col gap-2 p-3 shadow-none">
           <div className="text-ink flex items-center gap-2 px-2 py-1 text-sm font-semibold">
-            <CalendarClock className="text-ink-muted size-4" /> Resources
+            <AppIcon icon={DomainIcons.booking} className="text-ink-muted size-4" /> Resources
           </div>
           {assetsLoading ? (
             <div className="flex flex-col gap-2">

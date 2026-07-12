@@ -2,18 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ArrowLeftRight,
-  BarChart3,
-  Bell,
-  Building2,
-  CalendarClock,
-  ClipboardCheck,
-  ClipboardList,
-  LayoutDashboard,
-  Package,
-  Wrench,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { AppIcon, DomainIcons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { can, type Capability } from "@/lib/auth/permissions";
@@ -21,47 +11,47 @@ import { can, type Capability } from "@/lib/auth/permissions";
 type NavItem = {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: LucideIcon;
   /** Optional capability required to see the item. Undefined ⇒ everyone authenticated. */
   capability?: Capability;
 };
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: DomainIcons.dashboard },
   {
     href: "/organization",
     label: "Organization setup",
-    icon: Building2,
+    icon: DomainIcons.organization,
     capability: "org.manage",
   },
-  { href: "/assets", label: "Assets", icon: Package, capability: "assets.view" },
-  { href: "/allocation", label: "Allocation & Transfer", icon: ArrowLeftRight },
+  { href: "/assets", label: "Assets", icon: DomainIcons.assets, capability: "assets.view" },
+  { href: "/allocation", label: "Allocation & Transfer", icon: DomainIcons.allocation },
   {
     href: "/booking",
     label: "Resource Booking",
-    icon: CalendarClock,
+    icon: DomainIcons.booking,
     capability: "bookings.view",
   },
   {
     href: "/maintenance",
     label: "Maintenance",
-    icon: Wrench,
+    icon: DomainIcons.maintenance,
     capability: "maintenance.view",
   },
   {
     href: "/audit",
     label: "Audit",
-    icon: ClipboardCheck,
+    icon: DomainIcons.audit,
     capability: "audit.view",
   },
-  { href: "/reports", label: "Reports", icon: BarChart3, capability: "reports.view" },
+  { href: "/reports", label: "Reports", icon: DomainIcons.reports, capability: "reports.view" },
   {
     href: "/activity",
     label: "Activity Logs",
-    icon: ClipboardList,
+    icon: DomainIcons.activity,
     capability: "activity.view",
   },
-  { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/notifications", label: "Notifications", icon: DomainIcons.notifications },
 ];
 
 export function AppSidebarBrand({ onNavigate }: { onNavigate?: () => void }) {
@@ -85,8 +75,8 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const items = NAV_ITEMS.filter((item) => !item.capability || can(user, item.capability));
 
   return (
-    <nav className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-0.5 overflow-x-hidden overflow-y-auto px-3 py-2">
-      {items.map(({ href, label, icon: Icon }) => {
+    <nav className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto px-3 py-2">
+      {items.map(({ href, label, icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
@@ -100,7 +90,13 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 : "hover:bg-sidebar-accent/60",
             )}
           >
-            <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-ink-muted")} />
+            <AppIcon
+              icon={icon}
+              className={cn(
+                "size-[1.125rem]",
+                active ? "text-primary" : "text-ink-muted",
+              )}
+            />
             <span className="truncate">{label}</span>
           </Link>
         );

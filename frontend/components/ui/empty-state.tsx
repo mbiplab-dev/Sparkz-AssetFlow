@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { Inbox } from "lucide-react";
+import { IconBadge } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +61,7 @@ export function EmptyState({
   className,
   children,
 }: {
-  icon?: typeof Inbox;
+  icon?: LucideIcon;
   title: string;
   description?: string;
   actionHref?: string;
@@ -70,9 +72,7 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center gap-2 px-4 py-12 text-center", className)}>
-      <span className="bg-muted flex size-11 items-center justify-center rounded-xl">
-        <Icon className="text-ink-faint size-5" />
-      </span>
+      <IconBadge icon={Icon} size="lg" tint="text-ink-faint" bg="bg-muted" />
       <p className="text-ink-secondary text-sm font-medium">{title}</p>
       {description ? <p className="text-ink-muted max-w-sm text-sm">{description}</p> : null}
       {children}

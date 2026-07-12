@@ -1,14 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowLeftRight,
-  CalendarPlus,
-  ClipboardCheck,
-  Package,
-  PackagePlus,
-  Wrench,
-} from "lucide-react";
+import { AppIcon, DomainIcons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/lib/auth/permissions";
@@ -30,7 +23,7 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
       {canRegisterAssets && (
         <Button asChild className="w-full rounded-full sm:w-auto">
           <Link href="/assets">
-            <PackagePlus />
+            <AppIcon icon={DomainIcons.assetsRegister} />
             Register Asset
           </Link>
         </Button>
@@ -38,7 +31,7 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
       {isEmployee && (
         <Button asChild className="w-full rounded-full sm:w-auto">
           <Link href="/allocation">
-            <Package />
+            <AppIcon icon={DomainIcons.assets} />
             My allocations
           </Link>
         </Button>
@@ -46,7 +39,7 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
       {canBook && (
         <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
           <Link href="/booking">
-            <CalendarPlus />
+            <AppIcon icon={DomainIcons.booking} />
             Book Resource
           </Link>
         </Button>
@@ -54,7 +47,7 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
       {canRaiseMaintenance && (
         <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
           <Link href="/maintenance">
-            <Wrench />
+            <AppIcon icon={DomainIcons.maintenance} />
             Raise Maintenance
           </Link>
         </Button>
@@ -62,7 +55,7 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
       {isEmployee && canViewAudit && !canManageAudit && (
         <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
           <Link href="/audit">
-            <ClipboardCheck />
+            <AppIcon icon={DomainIcons.auditCycle} />
             My audit work
           </Link>
         </Button>
@@ -71,7 +64,7 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
       {canApproveTransfers && pendingTransfers > 0 && (
         <Button asChild variant="secondary" className="w-full rounded-full sm:w-auto">
           <Link href="/allocation">
-            <ArrowLeftRight />
+            <AppIcon icon={DomainIcons.allocation} />
             Approve Transfers
             <span className="bg-primary text-primary-foreground ml-1 rounded-full px-1.5 py-0.5 text-[11px] leading-none font-semibold">
               {pendingTransfers}

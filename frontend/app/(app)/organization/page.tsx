@@ -1,6 +1,7 @@
 "use client";
 
-import { Building2, LayoutGrid, Users } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
+import { AppIcon, DomainIcons, IconBadge } from "@/components/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
@@ -20,9 +21,12 @@ export default function OrganizationPage() {
       <div className="mx-auto w-full max-w-md py-16">
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-            <span className="bg-muted flex size-11 items-center justify-center rounded-xl">
-              <Building2 className="text-ink-faint size-5" />
-            </span>
+            <IconBadge
+              icon={DomainIcons.organization}
+              size="lg"
+              tint="text-ink-faint"
+              bg="bg-muted"
+            />
             <h2 className="font-display text-ink text-lg font-semibold">
               You don&apos;t have access to Organization Setup.
             </h2>
@@ -52,16 +56,16 @@ export default function OrganizationPage() {
         <div className="-mx-1 scrollbar-thin overflow-x-auto px-1">
           <TabsList className="h-auto min-w-max">
             <TabsTrigger value="departments" className="px-2.5 sm:px-3">
-              <Building2 />
+              <AppIcon icon={DomainIcons.organization} />
               <span className="hidden sm:inline">Departments</span>
               <span className="sm:hidden">Depts</span>
             </TabsTrigger>
             <TabsTrigger value="categories" className="px-2.5 sm:px-3">
-              <LayoutGrid />
+              <AppIcon icon={LayoutGrid} />
               Categories
             </TabsTrigger>
             <TabsTrigger value="employees" className="px-2.5 sm:px-3">
-              <Users />
+              <AppIcon icon={DomainIcons.people} />
               Employees
             </TabsTrigger>
           </TabsList>

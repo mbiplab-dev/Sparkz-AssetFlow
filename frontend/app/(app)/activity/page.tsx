@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ClipboardList, RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
 import { activityIcon } from "@/components/dashboard/activityIcon";
+import { AppIcon, DomainIcons, IconBadge } from "@/components/icons";
 import { RoleGate } from "@/components/rbac/RoleGate";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -108,14 +109,20 @@ function ActivityPageContent() {
           onClick={handleRefresh}
           disabled={refreshing || loading}
         >
-          <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
+          <AppIcon
+            icon={RefreshCw}
+            className={cn("size-3.5", refreshing && "animate-spin")}
+          />
           Refresh
         </Button>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
-          <Search className="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <AppIcon
+            icon={Search}
+            className="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -146,7 +153,7 @@ function ActivityPageContent() {
         </div>
       ) : error && logs.length === 0 ? (
         <EmptyState
-          icon={ClipboardList}
+          icon={DomainIcons.activity}
           title="Couldn't load activity"
           description={error}
           actionLabel="Try again"
@@ -154,7 +161,7 @@ function ActivityPageContent() {
         />
       ) : logs.length === 0 ? (
         <EmptyState
-          icon={ClipboardList}
+          icon={DomainIcons.activity}
           title={hasFilters ? "No matching activity" : "No activity yet"}
           description={
             hasFilters
@@ -192,15 +199,11 @@ function ActivityPageContent() {
               </TableHeader>
               <TableBody>
                 {logs.map((log) => {
-                  const { icon: Icon, tint, bg } = activityIcon(`${log.action} ${log.message}`);
+                  const { icon, tint, bg } = activityIcon(`${log.action} ${log.message}`);
                   return (
                     <TableRow key={log.id}>
                       <TableCell>
-                        <span
-                          className={cn("flex size-8 items-center justify-center rounded-lg", bg)}
-                        >
-                          <Icon className={cn("size-3.5", tint)} />
-                        </span>
+                        <IconBadge icon={icon} tint={tint} bg={bg} size="sm" className="size-8" />
                       </TableCell>
                       <TableCell>
                         <p className="text-ink-secondary max-w-xl text-sm leading-snug">
@@ -254,12 +257,10 @@ function ActivityPageContent() {
 }
 
 function ActivityCard({ log }: { log: ActivityLog }) {
-  const { icon: Icon, tint, bg } = activityIcon(`${log.action} ${log.message}`);
+  const { icon, tint, bg } = activityIcon(`${log.action} ${log.message}`);
   return (
     <li className="border-border bg-card flex items-start gap-3 rounded-xl border px-3.5 py-3">
-      <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", bg)}>
-        <Icon className={cn("size-3.5", tint)} />
-      </span>
+      <IconBadge icon={icon} tint={tint} bg={bg} size="md" />
       <div className="min-w-0 flex-1">
         <p className="text-ink-secondary text-sm leading-snug">
           {log.message || humanizeAction(log.action)}

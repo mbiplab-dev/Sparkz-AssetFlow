@@ -1,17 +1,8 @@
-import type { ComponentType } from "react";
-import {
-  ArrowLeftRight,
-  Boxes,
-  CalendarClock,
-  CircleCheckBig,
-  ClipboardCheck,
-  Package,
-  Undo2,
-  Wrench,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { DomainIcons, DomainTints } from "@/components/icons";
 
 export type ActivityIconSpec = {
-  icon: ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   tint: string;
   bg: string;
 };
@@ -19,42 +10,49 @@ export type ActivityIconSpec = {
 const RULES: { keywords: string[]; spec: ActivityIconSpec }[] = [
   {
     keywords: ["transfer"],
-    spec: { icon: ArrowLeftRight, tint: "text-accent-purple-deep", bg: "bg-accent-purple/25" },
+    spec: { icon: DomainIcons.allocation, ...DomainTints.purple },
   },
   {
     keywords: ["allocat", "assign"],
-    spec: { icon: Boxes, tint: "text-accent-sky", bg: "bg-accent-sky/15" },
+    spec: { icon: DomainIcons.assetsOk, ...DomainTints.sky },
   },
   {
     keywords: ["return"],
-    spec: { icon: Undo2, tint: "text-accent-pink", bg: "bg-accent-pink/15" },
+    spec: { icon: DomainIcons.return, ...DomainTints.pink },
   },
   {
     keywords: ["book"],
-    spec: { icon: CalendarClock, tint: "text-accent-teal", bg: "bg-accent-teal/15" },
+    spec: { icon: DomainIcons.booking, ...DomainTints.teal },
   },
   {
     keywords: ["maint", "repair"],
-    spec: { icon: Wrench, tint: "text-accent-orange", bg: "bg-accent-orange/15" },
+    spec: { icon: DomainIcons.maintenance, ...DomainTints.orange },
   },
   {
     keywords: ["audit"],
-    spec: { icon: ClipboardCheck, tint: "text-accent-brown", bg: "bg-accent-brown/15" },
+    spec: { icon: DomainIcons.audit, ...DomainTints.brown },
   },
   {
     keywords: ["register", "asset"],
-    spec: { icon: Package, tint: "text-accent-green", bg: "bg-accent-green/15" },
+    spec: { icon: DomainIcons.assets, ...DomainTints.green },
   },
   {
     keywords: ["overdue"],
-    spec: { icon: CircleCheckBig, tint: "text-destructive", bg: "bg-destructive/10" },
+    spec: { icon: DomainIcons.overdue, ...DomainTints.danger },
+  },
+  {
+    keywords: ["notif", "alert"],
+    spec: { icon: DomainIcons.notifications, ...DomainTints.primary },
+  },
+  {
+    keywords: ["user", "role", "employ"],
+    spec: { icon: DomainIcons.people, ...DomainTints.purple },
   },
 ];
 
 const DEFAULT_SPEC: ActivityIconSpec = {
-  icon: CircleCheckBig,
-  tint: "text-ink-muted",
-  bg: "bg-muted",
+  icon: DomainIcons.activity,
+  ...DomainTints.muted,
 };
 
 /** Picks a decorative accent icon + tint for an activity row by keyword. */

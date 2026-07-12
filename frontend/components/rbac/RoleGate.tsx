@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ShieldAlert } from "lucide-react";
+import { IconBadge } from "@/components/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { can, canAny, type Capability } from "@/lib/auth/permissions";
@@ -40,9 +41,7 @@ export function AccessDenied({
     <div className="mx-auto w-full max-w-md py-16">
       <Card>
         <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-          <span className="bg-muted flex size-11 items-center justify-center rounded-xl">
-            <ShieldAlert className="text-ink-faint size-5" />
-          </span>
+          <IconBadge icon={ShieldAlert} size="lg" tint="text-ink-faint" bg="bg-muted" />
           <h2 className="font-display text-ink text-lg font-semibold">{title}</h2>
           <p className="text-ink-muted text-sm">{description}</p>
         </CardContent>
