@@ -1,0 +1,31 @@
+[project]
+name = "backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.0.7",
+    "django-cors-headers>=4.9.0",
+    "django-environ>=0.14.0",
+    "djangorestframework>=3.17.1",
+    "drf-spectacular>=0.30.0",
+    "faker>=40.28.1",
+    "psycopg2-binary>=2.9.12",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.21",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = ["migrations", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "DJ"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
