@@ -2,7 +2,7 @@ from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.authentication.models import UserRole
@@ -16,7 +16,7 @@ from .serializers import (
 )
 
 
-class IsAssetManagerOrAdmin:
+class IsAssetManagerOrAdmin(BasePermission):
     """Read for all authenticated; write for admin + asset_manager."""
 
     def has_permission(self, request, view):
