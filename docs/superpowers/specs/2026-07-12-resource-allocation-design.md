@@ -55,8 +55,7 @@ Unique together: `(asset, holder_type, holder_id)`.
 
 **Hard invariant:** for every `Asset`, `sum(Holding.quantity) == Asset.total_quantity`. Enforced by construction — every mutation is a paired transfer between exactly two `Holding` rows inside one DB transaction with `select_for_update()` on both rows (or row-level locking equivalent), never a lone increment/decrement. A management check / test asserts this invariant holds across all assets.
 
-An employee's or department's "spare" capacity is **derived**, not stored:
-`spare(department, asset) = department's Holding.quantity - sum(Holding.quantity for employees under that department, that asset)`.
+A department's "spare" capacity is simply its current `Holding.quantity` — no further subtraction is needed. Sub-allocating to an employee (workflow step 3) already moves quantity out of the department's `Holding` row and into the employee's via `move_quantity`, so the department's `Holding.quantity` at any moment already reflects only what it hasn't pushed further down. (An earlier draft of this doc specified `spare = department's Holding.quantity - sum(employee holdings)`, which double-subtracts already-moved quantity — corrected during implementation of Task 4.)
 
 ### `AllocationRequest`
 
