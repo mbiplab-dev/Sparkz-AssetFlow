@@ -20,8 +20,13 @@ from faker import Faker
 
 from apps.assets.models import Asset, AssetCondition, AssetStatus, Location
 from apps.authentication.models import User, UserRole, UserStatus
+from apps.booking.models import Booking, BookingStatus
+from apps.maintenance.models import MaintenancePriority, MaintenanceRequest, MaintenanceStatus
 from apps.organization.models import AssetCategory, Department
 from apps.resource_allocation.models import Asset as ResourceAsset
+from apps.resource_allocation.services import allocate as ra_allocate
+from apps.resource_allocation.services import register_asset as ra_register
+from django.utils import timezone
 
 
 DEPARTMENTS = [
@@ -99,6 +104,9 @@ class Command(BaseCommand):
         managers, heads, employees = self._seed_users(fake, depts, opts["employees"])
         self._seed_assets(fake, cats, depts, locs, opts["assets"])
         self._seed_resource_assets(cats, managers[0] if managers else None)
+        self._seed_holdings(managers[0] if managers else None, depts, employees)
+        self._seed_maintenance(fake, managers[0] if managers else None, employees)
+        self._seed_bookings(fake, employees)
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -112,6 +120,18 @@ class Command(BaseCommand):
 
     def _wipe(self):
         self.stdout.write("Wiping demo data (keeping admin)...")
+        Booking.objects.all().delete()
+        MaintenanceRequest.objects.all().delete()
+        # Cascade order for resource_allocation — Transfer + Holding then Asset
+        from apps.resource_allocation.models import (
+            AllocationRequest,
+            Holding,
+            Transfer,
+        )
+        Transfer.objects.all().delete()
+        AllocationRequest.objects.all().delete()
+        Holding.objects.all().delete()
+        ResourceAsset.objects.all().delete()
         Asset.objects.all().delete()
         Location.objects.all().delete()
         User.objects.exclude(role=UserRole.ADMIN).delete()
@@ -281,9 +301,132 @@ class Command(BaseCommand):
         ]
         for name, cat_name, qty in items:
             cat = by_name.get(cat_name) or cats[0]
-            ResourceAsset.objects.create(
+            # Use the service so the initial manager-pool Holding is created too;
+            # otherwise `allocate` has nothing to pull from.
+            ra_register(
                 name=name,
                 category=cat,
                 total_quantity=qty,
+                condition="",
+                location="",
+                is_bookable=False,
                 created_by=created_by,
             )
+
+    def _seed_holdings(
+        self, manager: User | None, depts: list[Department], employees: list[User]
+    ):
+        """Allocate a few resource-catalog items to employees + departments."""
+        from apps.resource_allocation.models import Holding
+
+        if Holding.objects.filter(quantity__gt=0).exclude(holder_type="manager").exists():
+            return
+        if manager is None or not employees or not depts:
+            return
+
+        r_assets = list(ResourceAsset.objects.all())
+        if not r_assets:
+            return
+
+        # Allocate 3–5 quantity from each catalog item to random employees/departments
+        for r in r_assets[:6]:
+            # 1 employee holding
+            emp = random.choice(employees)
+            try:
+                ra_allocate(
+                    asset=r,
+                    to_holder_type="employee",
+                    to_holder_id=emp.id,
+                    quantity=random.randint(1, min(3, r.total_quantity)),
+                    performed_by=manager,
+                )
+            except Exception:
+                pass
+            # 1 department holding
+            dept = random.choice(depts)
+            try:
+                ra_allocate(
+                    asset=r,
+                    to_holder_type="department",
+                    to_holder_id=dept.id,
+                    quantity=random.randint(2, min(5, r.total_quantity)),
+                    performed_by=manager,
+                )
+            except Exception:
+                pass
+
+    def _seed_maintenance(self, fake: Faker, manager: User | None, employees: list[User]):
+        if MaintenanceRequest.objects.exists():
+            return
+        if not employees:
+            return
+        assets = list(Asset.objects.all()[:8])
+        if not assets:
+            return
+
+        # 1 pending, 1 approved, 1 in_progress, 1 resolved
+        specs = [
+            (MaintenanceStatus.PENDING, MaintenancePriority.LOW, None, None, None),
+            (MaintenanceStatus.APPROVED, MaintenancePriority.HIGH, manager, "TechCare Services", None),
+            (
+                MaintenanceStatus.IN_PROGRESS,
+                MaintenancePriority.MEDIUM,
+                manager,
+                "AutoCare Workshop",
+                None,
+            ),
+            (
+                MaintenanceStatus.RESOLVED,
+                MaintenancePriority.MEDIUM,
+                manager,
+                "Apple Authorized",
+                "Display cable reseated. Working normally.",
+            ),
+        ]
+        for asset, (status, priority, approver, tech_name, resolution) in zip(assets, specs):
+            raiser = random.choice(employees)
+            req = MaintenanceRequest(
+                asset=asset,
+                raised_by=raiser,
+                issue_description=fake.sentence(nb_words=8),
+                priority=priority,
+                status=status,
+                estimated_cost=Decimal(random.randint(150, 500)),
+            )
+            if approver:
+                req.approved_by = approver
+                req.approved_at = timezone.now()
+            if tech_name:
+                req.technician_name = tech_name if hasattr(req, "technician_name") else ""
+            if status == MaintenanceStatus.IN_PROGRESS:
+                req.started_at = timezone.now()
+            if resolution:
+                req.resolution_notes = resolution
+                req.resolved_at = timezone.now()
+                req.actual_cost = Decimal(random.randint(120, 400))
+            req.save()
+
+    def _seed_bookings(self, fake: Faker, employees: list[User]):
+        if Booking.objects.exists():
+            return
+        if not employees:
+            return
+        bookable = list(Asset.objects.filter(is_bookable=True)[:3])
+        if not bookable:
+            return
+        now = timezone.now().replace(minute=0, second=0, microsecond=0)
+        for asset in bookable:
+            for hour_offset in (2, 26, 50):  # today afternoon, tomorrow, next day
+                start = now + timedelta(hours=hour_offset)
+                end = start + timedelta(hours=1)
+                try:
+                    Booking.objects.create(
+                        asset=asset,
+                        booked_by=random.choice(employees),
+                        starts_at=start,
+                        ends_at=end,
+                        purpose=fake.sentence(nb_words=4),
+                        status=BookingStatus.UPCOMING,
+                    )
+                except Exception:
+                    pass  # respects the no-overlap constraint if any conflict
