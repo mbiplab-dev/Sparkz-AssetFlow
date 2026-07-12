@@ -82,6 +82,13 @@ export type Department = {
   name: string;
 };
 
+export type Location = {
+  id: number;
+  name: string;
+  address: string;
+  created_at: string;
+};
+
 function withQuery(base: string, params?: Record<string, string | undefined>): string {
   if (!params) return base;
   const search = new URLSearchParams();
@@ -137,4 +144,8 @@ export async function listCategoriesSimple(): Promise<Category[]> {
 
 export async function listDepartmentsSimple(): Promise<Department[]> {
   return (await authRequest("/api/org/departments/")) as Department[];
+}
+
+export async function listLocations(): Promise<Location[]> {
+  return (await authRequest("/api/assets/locations/")) as Location[];
 }

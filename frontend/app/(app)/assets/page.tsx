@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Package, PackagePlus, Search } from "lucide-react";
+import { MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -38,16 +42,21 @@ import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
   ASSET_STATUS_LABELS,
   createAsset,
+  deleteAsset,
   listAssets,
   listCategoriesSimple,
   listDepartmentsSimple,
+  listLocations,
   updateAssetStatus,
   type Asset,
   type AssetCondition,
   type AssetInput,
   type AssetStatus,
+  type Location,
 } from "@/lib/api/assets";
 import { AssetStatusBadge } from "@/components/assets/AssetStatusBadge";
+import { AssetEditDialog } from "@/components/assets/AssetEditDialog";
+import { ConfirmDialog } from "@/components/organization/ConfirmDialog";
 
 const STATUSES: AssetStatus[] = [
   "available",
@@ -74,12 +83,15 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AssetStatus>("all");
   const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all");
   const [bookableFilter, setBookableFilter] = useState<"all" | "true" | "false">("all");
   const [registerOpen, setRegisterOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<Asset | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState<AssetInput>({
     name: "",
     category: 0,
@@ -90,6 +102,7 @@ export default function AssetsPage() {
   });
 
   const canManage = user?.role === "admin" || user?.role === "asset_manager";
+  const canDelete = user?.role === "admin";
 
   const { loading } = useAsyncList(
     () =>
@@ -102,10 +115,12 @@ export default function AssetsPage() {
         }),
         listCategoriesSimple(),
         listDepartmentsSimple(),
-      ]).then(([assetList, cats, depts]) => {
+        listLocations().catch(() => [] as Location[]),
+      ]).then(([assetList, cats, depts, locs]) => {
         setAssets(assetList);
         setCategories(cats.map((c) => ({ id: c.id, name: c.name })));
         setDepartments(depts.map((d) => ({ id: d.id, name: d.name })));
+        setLocations(locs);
         return assetList;
       }),
     [search, statusFilter, categoryFilter, bookableFilter],
@@ -159,35 +174,58 @@ export default function AssetsPage() {
     }
   }
 
+  function openEdit(asset: Asset) {
+    setEditing(asset);
+    setEditOpen(true);
+  }
+
+  function handleAssetSaved(updated: Asset) {
+    setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+  }
+
+  async function handleDelete(asset: Asset) {
+    try {
+      await deleteAsset(asset.id);
+      setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+      toast.success(`Asset ${asset.asset_tag} deleted`);
+    } catch (err) {
+      toast.error("Failed to delete asset", {
+        description: err instanceof ApiError ? err.message : undefined,
+      });
+    }
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-ink text-2xl font-bold tracking-tight">Assets</h2>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-display text-ink text-xl font-bold tracking-tight sm:text-2xl">
+            Assets
+          </h2>
           <p className="text-ink-muted mt-0.5 text-sm">
             Register and track assets through their full lifecycle.
           </p>
         </div>
         {canManage && (
-          <Button onClick={openRegister} className="rounded-full">
+          <Button onClick={openRegister} className="w-full shrink-0 rounded-full sm:w-auto">
             <PackagePlus />
             Register Asset
           </Button>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1 lg:min-w-[16rem] lg:flex-1">
           <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
             placeholder="Search by tag, name, or serial…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-64 pl-8"
+            className="w-full pl-8"
           />
         </div>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | AssetStatus)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full lg:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -200,7 +238,7 @@ export default function AssetsPage() {
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full lg:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -213,7 +251,7 @@ export default function AssetsPage() {
           </SelectContent>
         </Select>
         <Select value={bookableFilter} onValueChange={(v) => setBookableFilter(v as "all" | "true" | "false")}>
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="w-full lg:w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -293,16 +331,45 @@ export default function AssetsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuLabel>Change status</DropdownMenuLabel>
-                            {STATUSES.map((s) => (
-                              <DropdownMenuItem
-                                key={s}
-                                onSelect={() => handleStatusChange(asset, s)}
-                                disabled={asset.status === s}
-                              >
-                                {ASSET_STATUS_LABELS[s]}
-                              </DropdownMenuItem>
-                            ))}
+                            <DropdownMenuItem onSelect={() => openEdit(asset)}>
+                              <Pencil />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>Change status</DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuLabel>Change status</DropdownMenuLabel>
+                                {STATUSES.map((s) => (
+                                  <DropdownMenuItem
+                                    key={s}
+                                    onSelect={() => handleStatusChange(asset, s)}
+                                    disabled={asset.status === s}
+                                  >
+                                    {ASSET_STATUS_LABELS[s]}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            {canDelete && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <ConfirmDialog
+                                  trigger={
+                                    <DropdownMenuItem
+                                      variant="destructive"
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
+                                      <Trash2 />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  }
+                                  title="Delete asset?"
+                                  description={`"${asset.asset_tag} — ${asset.name}" will be permanently removed. This cannot be undone.`}
+                                  confirmLabel="Delete"
+                                  onConfirm={() => handleDelete(asset)}
+                                />
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -316,7 +383,7 @@ export default function AssetsPage() {
       </Card>
 
       <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[min(90dvh,40rem)] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Register a new asset</DialogTitle>
             <DialogDescription>
@@ -350,7 +417,7 @@ export default function AssetsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <label className="text-ink-secondary text-sm font-medium">Serial number</label>
                 <Input
@@ -428,6 +495,16 @@ export default function AssetsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AssetEditDialog
+        asset={editing}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        categories={categories}
+        departments={departments}
+        locations={locations}
+        onSaved={handleAssetSaved}
+      />
     </div>
   );
 }

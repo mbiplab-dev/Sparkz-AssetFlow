@@ -60,7 +60,7 @@ export function OrgSetupCard() {
             </li>
           ))}
         </ul>
-        <Button asChild className="self-start rounded-full">
+        <Button asChild className="w-full self-start rounded-full sm:w-auto">
           <Link href="/organization">
             Set up organization
             <ArrowRight />

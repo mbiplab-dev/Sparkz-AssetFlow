@@ -41,17 +41,17 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
               return (
                 <li
                   key={item.id}
-                  className="border-border flex items-center gap-3 border-b py-2.5 last:border-b-0"
+                  className="border-border flex items-start gap-2.5 border-b py-2.5 last:border-b-0 sm:items-center sm:gap-3"
                 >
                   <span
                     className={cn(
-                      "flex size-7 shrink-0 items-center justify-center rounded-md",
+                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md sm:mt-0",
                       bg,
                     )}
                   >
                     <Icon className={cn("size-3.5", tint)} />
                   </span>
-                  <span className="text-ink-secondary min-w-0 flex-1 truncate text-sm">
+                  <span className="text-ink-secondary min-w-0 flex-1 text-sm sm:truncate">
                     {item.message}
                   </span>
                   <span className="text-ink-faint shrink-0 text-xs tabular-nums">

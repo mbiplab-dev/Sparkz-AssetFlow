@@ -121,10 +121,22 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+    /* Prevent iOS text-size adjust from breaking layouts */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Avoid horizontal scroll from full-bleed children */
+    overflow-x: hidden;
+  }
+}
+
+/* Touch-friendly scrolling for horizontal filter / tab strips */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
   }
 }
