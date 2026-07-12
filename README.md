@@ -155,8 +155,6 @@ By default the Next app **proxies `/api/*` to Django** (`BACKEND_ORIGIN`, defaul
 Sparkz-AssetFlow/
 ├── Makefile                 # all DX commands
 ├── docker-compose.yml       # Postgres 16
-├── AGENTS.md                # product rules for contributors / agents
-├── db-schema.txt            # canonical domain notes
 ├── backend/
 │   ├── apps/
 │   │   ├── authentication/  # User, JWT, OTP, register
@@ -236,7 +234,6 @@ Authenticated calls go through `frontend/lib/api/client.ts` (`authRequest`): JWT
 | Activity | `/api/activity/` | `/activity` |
 | Notifications | `/api/dashboard/notifications/` | `/notifications` |
 
-Full agent-oriented product rules: **`AGENTS.md`**.
 
 ---
 
