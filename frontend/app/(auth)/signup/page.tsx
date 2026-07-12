@@ -85,11 +85,11 @@ export default function SignupPage() {
 
   return (
     <Card className="rounded-xl border border-border bg-card p-0 shadow-none ring-1 ring-border">
-      <CardHeader className="gap-1.5 px-6 pt-6 pb-0">
+      <CardHeader className="gap-1.5 px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
         <p className="font-display text-xs font-semibold tracking-wide text-primary uppercase">
           AssetFlow
         </p>
-        <CardTitle className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <CardTitle className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
           Create account
         </CardTitle>
         <CardDescription className="text-muted-foreground">
@@ -97,7 +97,7 @@ export default function SignupPage() {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="px-6 pt-6">
+      <CardContent className="px-4 pt-5 sm:px-6 sm:pt-6">
         {error && (
           <div
             role="alert"
@@ -207,7 +207,7 @@ export default function SignupPage() {
         </form>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-stretch border-t border-border bg-transparent px-6 py-5">
+      <CardFooter className="flex flex-col items-stretch border-t border-border bg-transparent px-4 py-4 sm:px-6 sm:py-5">
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">

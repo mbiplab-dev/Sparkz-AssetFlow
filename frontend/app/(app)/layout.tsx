@@ -20,8 +20,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading || !user) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex w-64 flex-col gap-3">
+      <div className="flex flex-1 items-center justify-center px-4">
+        <div className="flex w-full max-w-64 flex-col gap-3">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-3/4" />
           <Skeleton className="h-8 w-1/2" />
@@ -35,11 +35,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     "AssetFlow";
 
   return (
-    <div className="flex min-h-dvh flex-1">
+    <div className="flex min-h-dvh min-w-0 flex-1 overflow-x-hidden">
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader title={title} />
-        <main className="flex-1 overflow-y-auto px-6 py-6">{children}</main>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6">
+          {children}
+        </main>
       </div>
     </div>
   );

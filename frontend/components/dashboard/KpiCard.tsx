@@ -18,28 +18,35 @@ export function KpiCard({ spec, value }: { spec: KpiCardSpec; value: number | nu
   const { label, href, icon: Icon, tint, bg } = spec;
 
   return (
-    <Link href={href} className="group block focus-visible:outline-none">
+    <Link href={href} className="group block min-w-0 focus-visible:outline-none">
       <Card
         className={cn(
-          "hover:ring-foreground/20 gap-2 py-5 transition-all duration-200 ease-out hover:-translate-y-0.5",
+          "hover:ring-foreground/20 h-full gap-2 py-3 transition-all duration-200 ease-out hover:-translate-y-0.5 sm:py-5",
           "group-focus-visible:ring-ring group-focus-visible:ring-2",
         )}
       >
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-ink-muted text-sm font-medium">{label}</span>
-            <span className={cn("flex size-7 items-center justify-center rounded-md", bg)}>
-              <Icon className={cn("size-4", tint)} />
+        <CardContent className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-ink-muted line-clamp-2 text-xs font-medium sm:text-sm">
+              {label}
+            </span>
+            <span
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-md sm:size-7",
+                bg,
+              )}
+            >
+              <Icon className={cn("size-3.5 sm:size-4", tint)} />
             </span>
           </div>
 
-          <div className="flex items-end justify-between">
+          <div className="flex items-end justify-between gap-2">
             {value === null ? (
-              <Skeleton className="h-9 w-14" />
+              <Skeleton className="h-8 w-12 sm:h-9 sm:w-14" />
             ) : (
               <AnimatedNumber
                 value={value}
-                className="font-display text-ink text-3xl font-bold tracking-tight"
+                className="font-display text-ink text-2xl font-bold tracking-tight sm:text-3xl"
               />
             )}
             <ArrowUpRight

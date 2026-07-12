@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Search, ShieldCheck, UserCog, Users } from "lucide-react";
+import { MoreHorizontal, Pencil, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -64,6 +62,12 @@ const ROLE_TINTS: Record<EmployeeRole, string> = {
   employee: "border-border bg-muted text-ink-muted",
 };
 
+type EmployeeEditForm = {
+  role: EmployeeRole;
+  status: OrgStatus;
+  department: number | null;
+};
+
 function initials(name: string): string {
   return (
     name
@@ -82,11 +86,16 @@ export function EmployeesTab() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | EmployeeRole>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | OrgStatus>("all");
-  const [deptDialogEmp, setDeptDialogEmp] = useState<Employee | null>(null);
-  const [deptValue, setDeptValue] = useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Employee | null>(null);
+  const [form, setForm] = useState<EmployeeEditForm>({
+    role: "employee",
+    status: "active",
+    department: null,
+  });
   const [saving, setSaving] = useState(false);
 
-  const { loading } = useAsyncList(
+  const { loading, reload } = useAsyncList(
     () =>
       Promise.all([
         listEmployees({
@@ -103,51 +112,48 @@ export function EmployeesTab() {
     [search, roleFilter, statusFilter],
   );
 
-  function updateEmp(updated: Employee) {
-    setEmployees((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+  function openEdit(emp: Employee) {
+    setEditing(emp);
+    setForm({
+      role: emp.role,
+      status: emp.status,
+      department: emp.department,
+    });
+    setDialogOpen(true);
   }
 
-  async function handleRoleChange(emp: Employee, role: EmployeeRole) {
-    try {
-      const updated = await updateEmployeeRole(emp.id, role);
-      updateEmp(updated);
-      toast.success(`${emp.full_name} is now ${ROLE_LABELS[role]}`);
-    } catch (err) {
-      toast.error("Failed to update role", {
-        description: err instanceof ApiError ? err.message : undefined,
-      });
-    }
-  }
-
-  async function handleStatusChange(emp: Employee, status: OrgStatus) {
-    try {
-      const updated = await updateEmployeeStatus(emp.id, status);
-      updateEmp(updated);
-      toast.success(`${emp.full_name} is now ${status === "active" ? "active" : "inactive"}`);
-    } catch (err) {
-      toast.error("Failed to update status", {
-        description: err instanceof ApiError ? err.message : undefined,
-      });
-    }
-  }
-
-  function openDeptDialog(emp: Employee) {
-    setDeptDialogEmp(emp);
-    setDeptValue(emp.department);
-  }
-
-  async function handleDeptSave() {
-    if (!deptDialogEmp) return;
+  async function handleSave() {
+    if (!editing) return;
     setSaving(true);
     try {
-      const updated = await updateEmployeeDepartment(deptDialogEmp.id, deptValue);
-      updateEmp(updated);
-      toast.success("Department assigned");
-      setDeptDialogEmp(null);
+      const calls: Array<Promise<Employee>> = [];
+      if (form.role !== editing.role) {
+        calls.push(updateEmployeeRole(editing.id, form.role));
+      }
+      if (form.status !== editing.status) {
+        calls.push(updateEmployeeStatus(editing.id, form.status));
+      }
+      if (form.department !== editing.department) {
+        calls.push(updateEmployeeDepartment(editing.id, form.department));
+      }
+
+      if (calls.length === 0) {
+        setDialogOpen(false);
+        return;
+      }
+
+      await Promise.all(calls);
+      toast.success("Employee updated");
+      setDialogOpen(false);
+      reload();
     } catch (err) {
-      toast.error("Failed to assign department", {
-        description: err instanceof ApiError ? err.message : undefined,
-      });
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong";
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -156,19 +162,19 @@ export function EmployeesTab() {
   const isSelf = (emp: Employee) => currentUser?.id === emp.id;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1 lg:min-w-[14rem] lg:flex-1 lg:max-w-xs">
           <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
             placeholder="Search by name or email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-56 pl-8"
+            className="w-full pl-8"
           />
         </div>
         <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as "all" | EmployeeRole)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full lg:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -180,7 +186,7 @@ export function EmployeesTab() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | OrgStatus)}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-full lg:w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -255,38 +261,11 @@ export function EmployeesTab() {
                             <MoreHorizontal />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuLabel className="flex items-center gap-1.5">
-                            <UserCog className="size-3.5" />
-                            Change role
-                          </DropdownMenuLabel>
-                          {(Object.keys(ROLE_LABELS) as EmployeeRole[]).map((role) => (
-                            <DropdownMenuItem
-                              key={role}
-                              onSelect={() => handleRoleChange(emp, role)}
-                              disabled={emp.role === role}
-                            >
-                              {ROLE_LABELS[role]}
-                              {emp.role === role && <ShieldCheck className="ml-auto size-3.5" />}
-                            </DropdownMenuItem>
-                          ))}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => openDeptDialog(emp)}>
-                            Assign department…
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => openEdit(emp)}>
+                            <Pencil />
+                            Edit
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {emp.status === "active" ? (
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onSelect={() => handleStatusChange(emp, "inactive")}
-                            >
-                              Deactivate
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onSelect={() => handleStatusChange(emp, "active")}>
-                              Activate
-                            </DropdownMenuItem>
-                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -298,39 +277,76 @@ export function EmployeesTab() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!deptDialogEmp} onOpenChange={(open) => !open && setDeptDialogEmp(null)}>
-        <DialogContent>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-h-[min(90dvh,40rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Assign department</DialogTitle>
+            <DialogTitle>Edit employee</DialogTitle>
             <DialogDescription>
-              {deptDialogEmp && `Choose a department for ${deptDialogEmp.full_name}.`}
+              {editing && `Update role, status, or department for ${editing.full_name}.`}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-ink-secondary text-sm font-medium">Department</label>
-            <Select
-              value={deptValue?.toString() ?? "none"}
-              onValueChange={(v) => setDeptValue(v === "none" ? null : Number(v))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="No department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No department</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id.toString()}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-ink-secondary text-sm font-medium">Role</label>
+              <Select
+                value={form.role}
+                onValueChange={(v) => setForm({ ...form, role: v as EmployeeRole })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ROLE_LABELS) as EmployeeRole[]).map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-ink-secondary text-sm font-medium">Status</label>
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm({ ...form, status: v as OrgStatus })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-ink-secondary text-sm font-medium">Department</label>
+              <Select
+                value={form.department?.toString() ?? "none"}
+                onValueChange={(v) =>
+                  setForm({ ...form, department: v === "none" ? null : Number(v) })
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="No department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No department</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id.toString()}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeptDialogEmp(null)} disabled={saving}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleDeptSave} disabled={saving} className="rounded-full">
-              {saving ? "Saving…" : "Assign"}
+            <Button onClick={handleSave} disabled={saving} className="rounded-full">
+              {saving ? "Saving…" : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

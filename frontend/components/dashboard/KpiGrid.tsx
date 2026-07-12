@@ -55,7 +55,7 @@ export const KPI_CARDS: KpiCardSpec[] = [
 
 export function KpiGrid({ kpis }: { kpis: DashboardKPIs | null }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:grid-cols-3">
       {KPI_CARDS.map((spec, i) => (
         <div
           key={spec.key}

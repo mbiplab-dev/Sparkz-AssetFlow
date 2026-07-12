@@ -20,8 +20,9 @@ help:
 	@echo "  db               Start postgres in docker (prints DATABASE_URL)"
 	@echo "  db-down          Stop the postgres container"
 	@echo "  db-logs          Tail postgres logs"
-	@echo "  init-db          Wait for postgres, then migrate"
+	@echo "  init-db          Wait for postgres, migrate, and seed demo data"
 	@echo "  migrate          Run Django migrations"
+	@echo "  seed-dev         Seed demo departments/categories/users/assets"
 	@echo "  install          Install backend + frontend dependencies"
 	@echo "  format           Format backend + frontend"
 	@echo "  lint             Lint backend + frontend"
@@ -59,10 +60,14 @@ db-logs:
 migrate:
 	cd $(BACKEND_DIR) && uv run python manage.py migrate
 
+seed-dev:
+	cd $(BACKEND_DIR) && uv run python manage.py seed_dev
+
 init-db: db
 	@echo "Waiting for postgres to be healthy..."
 	@until docker compose exec -T db pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB) >/dev/null 2>&1; do sleep 1; done
 	cd $(BACKEND_DIR) && uv run python manage.py migrate
+	cd $(BACKEND_DIR) && uv run python manage.py seed_dev
 
 # ---- install ---------------------------------------------------------------
 install: install-backend install-frontend

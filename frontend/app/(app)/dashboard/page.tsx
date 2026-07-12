@@ -94,7 +94,7 @@ export default function DashboardPage() {
   const isManagerLike = role === "admin" || role === "asset_manager" || role === "department_head";
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
       <SectionReveal>
         <DashboardHeader isRefreshing={isRefreshing} onRefresh={handleRefresh} />
       </SectionReveal>
@@ -103,9 +103,15 @@ export default function DashboardPage() {
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>Couldn&apos;t load dashboard data</AlertTitle>
-          <AlertDescription className="flex items-center gap-3">
-            {error}
-            <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <span className="min-w-0">{error}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="w-full shrink-0 sm:w-auto"
+            >
               Retry
             </Button>
           </AlertDescription>

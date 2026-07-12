@@ -95,7 +95,7 @@ class AssetViewSet(viewsets.ModelViewSet):
 
 def _own_holder_filters(user):
     """Q-expression fragments describing which Holding rows this user may see."""
-    if user.role == UserRole.ASSET_MANAGER:
+    if user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
         return Q()
     if user.role == UserRole.DEPARTMENT_HEAD:
         dept = Department.objects.filter(head=user).first()
@@ -139,7 +139,7 @@ class TransferViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset()
-        if user.role == UserRole.ASSET_MANAGER:
+        if user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
             pass
         elif user.role == UserRole.DEPARTMENT_HEAD:
             dept = Department.objects.filter(head=user).first()
@@ -191,7 +191,7 @@ class AllocationRequestViewSet(viewsets.ModelViewSet):
         # not by this list/retrieve visibility scoping.
         if self.action in ("fulfill", "reject", "cancel"):
             return qs
-        if user.role == UserRole.ASSET_MANAGER:
+        if user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
             return qs
         if user.role == UserRole.DEPARTMENT_HEAD:
             dept = Department.objects.filter(head=user).first()
@@ -227,7 +227,7 @@ class AllocationRequestViewSet(viewsets.ModelViewSet):
             return Response({"detail": "asset query param is required."}, status=400)
         asset = Asset.objects.get(pk=asset_id)
 
-        if request.user.role == UserRole.ASSET_MANAGER:
+        if request.user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
             dept_ids_with_spare = [
                 d.id
                 for d in Department.objects.all()
@@ -263,7 +263,7 @@ class AllocationRequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         quantity = serializer.validated_data["quantity"]
 
-        if request.user.role == UserRole.ASSET_MANAGER:
+        if request.user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
             from_holder_type, from_holder_id = HolderType.MANAGER, MANAGER_HOLDER_ID
         else:
             dept = Department.objects.filter(head=request.user).first()
@@ -334,7 +334,7 @@ class AllocateView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        if request.user.role == UserRole.ASSET_MANAGER:
+        if request.user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
             try:
                 services.allocate(
                     asset=data["asset"],

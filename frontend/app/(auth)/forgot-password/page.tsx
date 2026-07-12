@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PasswordInput } from "@/components/PasswordInput";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/http";
 import { confirmPasswordReset, requestPasswordResetOtp } from "@/lib/auth/authApi";
 import { useCountdown } from "@/lib/hooks/useCountdown";
-
-const inputClass =
-  "rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base text-zinc-900 outline-none focus:border-zinc-900 dark:border-zinc-700 dark:text-zinc-50 dark:focus:border-zinc-50";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -74,142 +82,163 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  const description =
+    step === "email"
+      ? "Enter your email to receive a reset code."
+      : step === "otp"
+        ? `Enter the code sent to ${email}.`
+        : "Choose a new password.";
+
   return (
-    <>
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Reset your password
-      </h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        {step === "email" && "Enter your email to receive a reset code."}
-        {step === "otp" && `Enter the code sent to ${email}.`}
-        {step === "password" && "Choose a new password."}
-      </p>
-
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-          {error}
+    <Card className="rounded-xl border border-border bg-card p-0 shadow-none ring-1 ring-border">
+      <CardHeader className="gap-1.5 px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
+        <p className="font-display text-xs font-semibold tracking-wide text-primary uppercase">
+          AssetFlow
         </p>
-      )}
+        <CardTitle className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+          Reset your password
+        </CardTitle>
+        <CardDescription className="text-muted-foreground break-words">
+          {description}
+        </CardDescription>
+      </CardHeader>
 
-      {step === "email" && (
-        <form onSubmit={handleRequestOtp} className="mt-6 flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Email
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClass}
-              placeholder="you@example.com"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-foreground text-background mt-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
+      <CardContent className="px-4 pt-5 sm:px-6 sm:pt-6">
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {isSubmitting ? "Sending..." : "Send reset code"}
-          </button>
-        </form>
-      )}
+            {error}
+          </div>
+        )}
 
-      {step === "otp" && (
-        <form onSubmit={handleContinueFromCode} className="mt-6 flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            One-time code
-            <input
-              type="text"
-              inputMode="numeric"
-              required
-              minLength={6}
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className={`${inputClass} tracking-widest`}
-              placeholder="123456"
-            />
-          </label>
+        {step === "email" && (
+          <form onSubmit={handleRequestOtp} noValidate>
+            <FieldGroup className="gap-4">
+              <Field>
+                <FieldLabel htmlFor="reset-email">Email</FieldLabel>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="rounded-xs"
+                />
+              </Field>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-1 h-10 w-full rounded-full text-sm font-medium"
+              >
+                {isSubmitting ? "Sending…" : "Send reset code"}
+              </Button>
+            </FieldGroup>
+          </form>
+        )}
 
-          <button
-            type="submit"
-            className="bg-foreground text-background mt-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-          >
-            Continue
-          </button>
+        {step === "otp" && (
+          <form onSubmit={handleContinueFromCode} noValidate>
+            <FieldGroup className="gap-4">
+              <Field>
+                <FieldLabel htmlFor="reset-code">One-time code</FieldLabel>
+                <Input
+                  id="reset-code"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  minLength={6}
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="rounded-xs tracking-widest"
+                  placeholder="123456"
+                />
+              </Field>
+              <Button type="submit" className="mt-1 h-10 w-full rounded-full text-sm font-medium">
+                Continue
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleResend}
+                disabled={secondsRemaining > 0}
+                className="w-full"
+              >
+                {secondsRemaining > 0 ? `Resend code (${secondsRemaining}s)` : "Resend code"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setError(null);
+                  setStep("email");
+                }}
+                className="w-full"
+              >
+                Use a different email
+              </Button>
+            </FieldGroup>
+          </form>
+        )}
 
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={secondsRemaining > 0}
-            className="text-sm font-medium text-zinc-600 hover:underline disabled:opacity-60 disabled:hover:no-underline dark:text-zinc-400"
-          >
-            {secondsRemaining > 0 ? `Resend code (${secondsRemaining}s)` : "Resend code"}
-          </button>
+        {step === "password" && (
+          <form onSubmit={handleConfirm} noValidate>
+            <FieldGroup className="gap-4">
+              <Field>
+                <FieldLabel htmlFor="reset-new-password">New password</FieldLabel>
+                <PasswordInput
+                  id="reset-new-password"
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="reset-confirm-password">Confirm new password</FieldLabel>
+                <PasswordInput
+                  id="reset-confirm-password"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
+              </Field>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-1 h-10 w-full rounded-full text-sm font-medium"
+              >
+                {isSubmitting ? "Resetting…" : "Reset password"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setError(null);
+                  setStep("otp");
+                }}
+                className="w-full"
+              >
+                Back
+              </Button>
+            </FieldGroup>
+          </form>
+        )}
+      </CardContent>
 
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-              setStep("email");
-            }}
-            className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
-          >
-            Use a different email
-          </button>
-        </form>
-      )}
-
-      {step === "password" && (
-        <form onSubmit={handleConfirm} className="mt-6 flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            New password
-            <PasswordInput
-              value={newPassword}
-              onChange={setNewPassword}
-              className={inputClass}
-              placeholder="••••••••"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Confirm new password
-            <PasswordInput
-              value={confirmPassword}
-              onChange={setConfirmPassword}
-              className={inputClass}
-              placeholder="••••••••"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-foreground text-background mt-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
-          >
-            {isSubmitting ? "Resetting..." : "Reset password"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-              setStep("otp");
-            }}
-            className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
-          >
-            Back
-          </button>
-        </form>
-      )}
-
-      <div className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
-        Remembered your password?{" "}
-        <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
-          Log in
-        </Link>
-      </div>
-    </>
+      <CardFooter className="flex flex-col items-stretch border-t border-border bg-transparent px-4 py-4 sm:px-6 sm:py-5">
+        <p className="text-center text-sm text-muted-foreground">
+          Remembered your password?{" "}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            Log in
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
   );
 }

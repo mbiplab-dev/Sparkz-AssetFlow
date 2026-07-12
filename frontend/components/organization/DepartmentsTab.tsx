@@ -69,7 +69,11 @@ export function DepartmentsTab() {
   });
   const [employees, setEmployees] = useState<Employee[]>([]);
 
-  const { data: departments, loading } = useAsyncList(
+  const {
+    data: departments,
+    loading,
+    setData: setDepartments,
+  } = useAsyncList(
     () =>
       Promise.all([
         listDepartments({
@@ -145,20 +149,20 @@ export function DepartmentsTab() {
   const activeDepartments = departments.filter((d) => d.status === "active");
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-center">
+          <div className="relative min-w-0 sm:min-w-[14rem] sm:flex-1 sm:max-w-xs">
             <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
             <Input
               placeholder="Search departments…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-56 pl-8"
+              className="w-full pl-8"
             />
           </div>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | OrgStatus)}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full sm:w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -168,7 +172,7 @@ export function DepartmentsTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={openCreate} className="rounded-full">
+        <Button onClick={openCreate} className="w-full shrink-0 rounded-full sm:w-auto">
           <Plus />
           Add Department
         </Button>
@@ -260,7 +264,7 @@ export function DepartmentsTab() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[min(90dvh,40rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit department" : "Add department"}</DialogTitle>
             <DialogDescription>
