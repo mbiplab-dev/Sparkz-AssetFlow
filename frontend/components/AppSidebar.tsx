@@ -15,18 +15,32 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { can, type Capability } from "@/lib/auth/permissions";
 
-export const NAV_ITEMS = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  /** Optional capability required to see the item. Undefined ⇒ everyone. */
+  capability?: Capability;
+};
+
+export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/organization", label: "Organization setup", icon: Building2, adminOnly: true },
+  {
+    href: "/organization",
+    label: "Organization setup",
+    icon: Building2,
+    capability: "org.manage",
+  },
   { href: "/assets", label: "Assets", icon: Package },
   { href: "/allocation", label: "Allocation & Transfer", icon: ArrowLeftRight },
   { href: "/booking", label: "Resource Booking", icon: CalendarClock },
   { href: "/maintenance", label: "Maintenance", icon: Wrench },
   { href: "/audit", label: "Audit", icon: ClipboardCheck },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/reports", label: "Reports", icon: BarChart3, capability: "reports.view" },
   { href: "/notifications", label: "Notifications", icon: Bell },
-] as const;
+];
 
 export function AppSidebarBrand({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -49,7 +63,7 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const items = NAV_ITEMS.filter((item) => !("adminOnly" in item) || user?.role === "admin");
+  const items = NAV_ITEMS.filter((item) => !item.capability || can(user, item.capability));
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 overflow-hidden px-3 py-2">

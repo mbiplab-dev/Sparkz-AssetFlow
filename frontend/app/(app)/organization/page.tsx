@@ -1,27 +1,37 @@
 "use client";
 
 import { Building2, LayoutGrid, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/lib/auth/permissions";
 import { CategoriesTab } from "@/components/organization/CategoriesTab";
 import { DepartmentsTab } from "@/components/organization/DepartmentsTab";
 import { EmployeesTab } from "@/components/organization/EmployeesTab";
 
 export default function OrganizationPage() {
   const { user } = useAuth();
+  const canManageOrg = useCan("org.manage");
 
   if (!user) return null;
 
-  if (user.role !== "admin") {
+  if (!canManageOrg) {
     return (
-      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-2 py-20 text-center">
-        <span className="bg-muted flex size-11 items-center justify-center rounded-xl">
-          <Building2 className="text-ink-faint size-5" />
-        </span>
-        <h2 className="font-display text-ink text-lg font-semibold">Admins only</h2>
-        <p className="text-ink-muted text-sm">
-          Organization setup is restricted to administrators. Contact your admin if you need access.
-        </p>
+      <div className="mx-auto w-full max-w-md py-16">
+        <Card>
+          <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+            <span className="bg-muted flex size-11 items-center justify-center rounded-xl">
+              <Building2 className="text-ink-faint size-5" />
+            </span>
+            <h2 className="font-display text-ink text-lg font-semibold">
+              You don&apos;t have access to Organization Setup.
+            </h2>
+            <p className="text-ink-muted text-sm">
+              Organization setup is restricted to administrators. Contact your admin if you need
+              access.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

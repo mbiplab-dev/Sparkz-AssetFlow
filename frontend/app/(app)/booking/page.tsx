@@ -1,5 +1,8 @@
 "use client";
 
+// TODO(rbac): once this page stabilizes, gate the "Book resource" / "New
+// booking" affordance on `useCan("bookings.create")` (all roles have it
+// today, but keeping it explicit protects against future role changes).
 import { useState } from "react";
 import { CalendarClock, Search } from "lucide-react";
 import { ModuleScreen } from "@/components/ModuleScreen";

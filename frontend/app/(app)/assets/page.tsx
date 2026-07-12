@@ -36,7 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/lib/auth/permissions";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
@@ -79,7 +79,6 @@ const CONDITION_LABELS: Record<AssetCondition, string> = {
 };
 
 export default function AssetsPage() {
-  const { user } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
@@ -101,8 +100,12 @@ export default function AssetsPage() {
     notes: "",
   });
 
-  const canManage = user?.role === "admin" || user?.role === "asset_manager";
-  const canDelete = user?.role === "admin";
+  const canRegister = useCan("assets.register");
+  const canEdit = useCan("assets.edit");
+  const canDelete = useCan("assets.delete");
+  // "Register" gates the button + empty-state CTA. "Edit" gates the row-level
+  // dropdown (which also carries the delete + status controls, all manager-scoped).
+  const canManage = canRegister || canEdit;
 
   const { loading } = useAsyncList(
     () =>
@@ -206,7 +209,7 @@ export default function AssetsPage() {
             Register and track assets through their full lifecycle.
           </p>
         </div>
-        {canManage && (
+        {canRegister && (
           <Button onClick={openRegister} className="w-full shrink-0 rounded-full sm:w-auto">
             <PackagePlus />
             Register Asset
@@ -277,11 +280,11 @@ export default function AssetsPage() {
               </span>
               <p className="text-ink-secondary text-sm font-medium">No assets found</p>
               <p className="text-ink-muted text-sm">
-                {canManage
+                {canRegister
                   ? "Register your first asset to start tracking it through its lifecycle."
                   : "No assets match your current filters."}
               </p>
-              {canManage && (
+              {canRegister && (
                 <Button onClick={openRegister} variant="outline" className="mt-1 rounded-full">
                   <PackagePlus />
                   Register Asset
@@ -331,10 +334,12 @@ export default function AssetsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuItem onSelect={() => openEdit(asset)}>
-                              <Pencil />
-                              Edit
-                            </DropdownMenuItem>
+                            {canEdit && (
+                              <DropdownMenuItem onSelect={() => openEdit(asset)}>
+                                <Pencil />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger>Change status</DropdownMenuSubTrigger>
                               <DropdownMenuSubContent>

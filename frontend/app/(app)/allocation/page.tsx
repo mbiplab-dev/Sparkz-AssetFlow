@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/lib/auth/permissions";
 import {
   allocateAsset,
   createAllocationRequest,
@@ -114,6 +115,18 @@ function formatDate(iso: string | null): string {
 
 export default function AllocationPage() {
   const { user } = useAuth();
+  // Manager-only mutations (direct allocate out of the pool, initiate transfers).
+  const canAllocate = useCan("assets.allocate");
+  const canInitiateTransfer = useCan("transfers.initiate");
+  const canInitiateReturn = useCan("returns.initiate");
+  // TODO(rbac): when the allocation page grows an explicit approve/reject UI
+  // for pending transfer and return requests, gate those controls on
+  // `useCan("transfers.approve")` / `useCan("returns.approve")`. Right now the
+  // page only surfaces holdings + a manager-driven initiate flow.
+  // Non-managers can raise allocation *requests* (initiate) — asset managers
+  // and admins get the direct-allocate path; the backend rejects mismatches.
+  const canRequestAllocation =
+    user?.role === "department_head" || user?.role === "employee";
   const [search, setSearch] = useState("");
   const { data, loading, setData, reload } = useAsyncList<Bundle>(
     () =>
@@ -137,8 +150,14 @@ export default function AllocationPage() {
   const bundle: Bundle = Array.isArray(data) ? EMPTY_BUNDLE : data;
   const { holdings, assets, transfers, departments, employees } = bundle;
 
-  const isManager = user?.role === "asset_manager";
-  const canAllocate = isManager || user?.role === "department_head";
+  // `isManager` decides which backend endpoint to call (direct allocate vs
+  // raise a request); the *visibility* of the button uses capability checks.
+  const isManager = user?.role === "asset_manager" || user?.role === "admin";
+  // Show the "Allocate / Request allocation" button to anyone who can either
+  // allocate directly (admin/asset_manager) or file an allocation request
+  // (department_head — per the product spec they book/allocate on behalf of
+  // their department). Employees stay read-only for allocation.
+  const showAllocateButton = canAllocate || canRequestAllocation;
 
   // Active allocations = any holding with quantity > 0 that isn't the manager pool.
   const activeHoldings = useMemo(
@@ -339,10 +358,10 @@ export default function AllocationPage() {
             className="w-64 pl-8"
           />
         </div>
-        {canAllocate && (
+        {showAllocateButton && (
           <Button onClick={openAllocate} className="rounded-full">
             <Plus />
-            Allocate asset
+            {canAllocate ? "Allocate asset" : "Request allocation"}
           </Button>
         )}
       </div>
@@ -366,10 +385,10 @@ export default function AllocationPage() {
                   ? "Nothing has been allocated yet."
                   : "No holdings match your search."}
               </p>
-              {canAllocate && activeHoldings.length === 0 && (
+              {showAllocateButton && activeHoldings.length === 0 && (
                 <Button onClick={openAllocate} variant="outline" className="mt-1 rounded-full">
                   <Plus />
-                  Allocate asset
+                  {canAllocate ? "Allocate asset" : "Request allocation"}
                 </Button>
               )}
             </div>
@@ -404,28 +423,42 @@ export default function AllocationPage() {
                         {formatDate(allocatedAt)}
                       </TableCell>
                       <TableCell className="pr-4 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm">
-                              <MoreHorizontal />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => openReturn(h)}>
-                              <RotateCcw />
-                              Return
-                            </DropdownMenuItem>
-                            {isManager && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => openTransfer(h)}>
-                                  <ArrowLeftRight />
-                                  Initiate transfer
+                        {(canInitiateReturn || canInitiateTransfer) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-sm">
+                                <MoreHorizontal />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {canInitiateReturn && (
+                                <DropdownMenuItem onSelect={() => openReturn(h)}>
+                                  <RotateCcw />
+                                  Return
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              )}
+                              {/*
+                                TODO(rbac): employees + department heads have
+                                `transfers.initiate` in the capability matrix,
+                                but the current implementation executes the
+                                transfer as return + re-allocate, which needs
+                                asset-manager rights. Restrict the button to
+                                `isManager` until a proper transfer-request
+                                endpoint lands and this UI can raise a request
+                                for non-managers.
+                              */}
+                              {canInitiateTransfer && isManager && (
+                                <>
+                                  {canInitiateReturn && <DropdownMenuSeparator />}
+                                  <DropdownMenuItem onSelect={() => openTransfer(h)}>
+                                    <ArrowLeftRight />
+                                    Initiate transfer
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

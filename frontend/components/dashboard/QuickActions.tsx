@@ -4,14 +4,16 @@ import Link from "next/link";
 import { ArrowLeftRight, CalendarPlus, PackagePlus, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/lib/auth/permissions";
 
 export function QuickActions({ pendingTransfers }: { pendingTransfers: number }) {
   const { user } = useAuth();
-  if (!user) return null;
+  const canRegisterAssets = useCan("assets.register");
+  const canBook = useCan("bookings.create");
+  const canRaiseMaintenance = useCan("maintenance.raise");
+  const canApproveTransfers = useCan("transfers.approve");
 
-  const canRegisterAssets = user.role === "admin" || user.role === "asset_manager";
-  const canApproveTransfers =
-    user.role === "admin" || user.role === "asset_manager" || user.role === "department_head";
+  if (!user) return null;
 
   return (
     <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
@@ -23,18 +25,22 @@ export function QuickActions({ pendingTransfers }: { pendingTransfers: number })
           </Link>
         </Button>
       )}
-      <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
-        <Link href="/booking">
-          <CalendarPlus />
-          Book Resource
-        </Link>
-      </Button>
-      <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
-        <Link href="/maintenance">
-          <Wrench />
-          Raise Maintenance
-        </Link>
-      </Button>
+      {canBook && (
+        <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
+          <Link href="/booking">
+            <CalendarPlus />
+            Book Resource
+          </Link>
+        </Button>
+      )}
+      {canRaiseMaintenance && (
+        <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
+          <Link href="/maintenance">
+            <Wrench />
+            Raise Maintenance
+          </Link>
+        </Button>
+      )}
 
       {canApproveTransfers && pendingTransfers > 0 && (
         <Button asChild variant="secondary" className="w-full rounded-full sm:w-auto">
