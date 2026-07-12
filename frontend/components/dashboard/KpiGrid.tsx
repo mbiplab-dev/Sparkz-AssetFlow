@@ -98,13 +98,7 @@ const EMPLOYEE_KPI_CARDS: KpiCardSpec[] = [
   },
 ];
 
-export function KpiGrid({
-  kpis,
-  role,
-}: {
-  kpis: DashboardKPIs | null;
-  role?: UserRole | null;
-}) {
+export function KpiGrid({ kpis, role }: { kpis: DashboardKPIs | null; role?: UserRole | null }) {
   const cards = role === "employee" ? EMPLOYEE_KPI_CARDS : KPI_CARDS;
   return (
     <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:grid-cols-3">

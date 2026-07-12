@@ -1,14 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ClipboardList,
-  Lock,
-  MapPin,
-  Users,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList, Lock, MapPin, Users } from "lucide-react";
 import { CycleStatusBadge } from "@/components/audit/CycleStatusBadge";
 import { VerdictBadge } from "@/components/audit/VerdictBadge";
 import { Button } from "@/components/ui/button";
@@ -49,11 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /** Non-pending verdicts the API accepts. */
-const SETTABLE_VERDICTS: Exclude<AuditVerdict, "pending">[] = [
-  "verified",
-  "missing",
-  "damaged",
-];
+const SETTABLE_VERDICTS: Exclude<AuditVerdict, "pending">[] = ["verified", "missing", "damaged"];
 
 const KIND_TINT: Record<DiscrepancyKind, string> = {
   missing: "border-destructive/25 bg-destructive/5",
@@ -142,7 +131,7 @@ export function CycleDetailSheet({
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
-          <div className="border-border mb-4 rounded-xl border bg-card p-4">
+          <div className="border-border bg-card mb-4 rounded-xl border p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-ink font-medium">Verification progress</span>
               <span className="text-ink-muted tabular-nums">
@@ -304,7 +293,7 @@ export function CycleDetailSheet({
                 independently of the cycle status.
               </p>
               {discrepancies.length === 0 ? (
-                <div className="text-ink-muted border-border flex items-center gap-2 rounded-xl border bg-card px-4 py-8 text-sm">
+                <div className="text-ink-muted border-border bg-card flex items-center gap-2 rounded-xl border px-4 py-8 text-sm">
                   <CheckCircle2 className="text-accent-green size-4 shrink-0" />
                   No discrepancies. Verified items produce no rows.
                 </div>
@@ -362,7 +351,7 @@ export function CycleDetailSheet({
                   {cycle.auditors.map((a) => (
                     <li
                       key={a.id}
-                      className="border-border flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5"
+                      className="border-border bg-card flex items-center gap-3 rounded-xl border px-3 py-2.5"
                     >
                       <span className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-full text-xs font-semibold">
                         {a.full_name

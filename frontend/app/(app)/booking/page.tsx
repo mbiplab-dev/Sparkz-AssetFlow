@@ -31,12 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useCan } from "@/lib/auth/permissions";
 import { listAssets, type Asset } from "@/lib/api/assets";
-import {
-  cancelBooking,
-  createBooking,
-  listBookings,
-  type Booking,
-} from "@/lib/api/booking";
+import { cancelBooking, createBooking, listBookings, type Booking } from "@/lib/api/booking";
 import { ExportButton } from "@/components/ExportButton";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 
@@ -152,10 +147,7 @@ export default function BookingPage() {
               <p className="text-ink-muted text-xs">
                 Mark assets as &quot;shared / bookable&quot; when registering or editing them.
               </p>
-              <a
-                href="/assets"
-                className="text-primary text-xs font-semibold hover:underline"
-              >
+              <a href="/assets" className="text-primary text-xs font-semibold hover:underline">
                 Go to Assets →
               </a>
             </div>
@@ -270,10 +262,7 @@ export default function BookingPage() {
                       {format(d, "EEE")}
                     </span>
                     <span
-                      className={cn(
-                        "text-ink text-lg font-semibold",
-                        today && "text-accent-green",
-                      )}
+                      className={cn("text-ink text-lg font-semibold", today && "text-accent-green")}
                     >
                       {format(d, "d")}
                     </span>
@@ -310,11 +299,7 @@ export default function BookingPage() {
 
             {/* Bookings overlay */}
             {selected && !bookingsLoading ? (
-              <BookingsOverlay
-                bookings={bookings}
-                days={days}
-                onSelect={(b) => setDetailFor(b)}
-              />
+              <BookingsOverlay bookings={bookings} days={days} onSelect={(b) => setDetailFor(b)} />
             ) : null}
           </div>
         </Card>
@@ -372,9 +357,7 @@ function BookingsOverlay({
       >
         <div />
         {days.map((d) => {
-          const rowsForDay = bookings.filter((b) =>
-            isSameDay(parseISO(b.starts_at), d),
-          );
+          const rowsForDay = bookings.filter((b) => isSameDay(parseISO(b.starts_at), d));
           return (
             <div key={`col-${d.toISOString()}`} className="relative">
               {rowsForDay.map((b) => {
@@ -439,7 +422,10 @@ function CreateBookingDialog({
     const base = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, 0);
     setStartsAt(format(base, "yyyy-MM-dd'T'HH:mm"));
     setEndsAt(
-      format(new Date(base.getFullYear(), base.getMonth(), base.getDate(), h + 1, 0), "yyyy-MM-dd'T'HH:mm"),
+      format(
+        new Date(base.getFullYear(), base.getMonth(), base.getDate(), h + 1, 0),
+        "yyyy-MM-dd'T'HH:mm",
+      ),
     );
     setPurpose("");
   }, [open, seed]);

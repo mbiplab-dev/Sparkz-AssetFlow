@@ -16,10 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/http";
-import {
-  resolveMaintenance,
-  type MaintenanceRequest,
-} from "@/lib/api/maintenance";
+import { resolveMaintenance, type MaintenanceRequest } from "@/lib/api/maintenance";
 
 type ResolveDialogProps = {
   request: MaintenanceRequest | null;
@@ -28,12 +25,7 @@ type ResolveDialogProps = {
   onResolved: (req: MaintenanceRequest) => void;
 };
 
-export function ResolveDialog({
-  request,
-  open,
-  onOpenChange,
-  onResolved,
-}: ResolveDialogProps) {
+export function ResolveDialog({ request, open, onOpenChange, onResolved }: ResolveDialogProps) {
   const [notes, setNotes] = useState("");
   const [cost, setCost] = useState("");
   const [saving, setSaving] = useState(false);
@@ -79,9 +71,7 @@ export function ResolveDialog({
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-ink-secondary text-sm font-medium">
-              Resolution notes *
-            </label>
+            <label className="text-ink-secondary text-sm font-medium">Resolution notes *</label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -90,9 +80,7 @@ export function ResolveDialog({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-ink-secondary text-sm font-medium">
-              Actual cost (optional)
-            </label>
+            <label className="text-ink-secondary text-sm font-medium">Actual cost (optional)</label>
             <Input
               type="number"
               inputMode="decimal"

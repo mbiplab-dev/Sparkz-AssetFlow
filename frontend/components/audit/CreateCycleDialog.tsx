@@ -64,9 +64,7 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
     ])
       .then(([emps, depts, locs]) => {
         if (cancelled) return;
-        setEmployees(
-          (Array.isArray(emps) ? emps : []).filter((e) => e.role === "employee"),
-        );
+        setEmployees((Array.isArray(emps) ? emps : []).filter((e) => e.role === "employee"));
         setDepartments(Array.isArray(depts) ? depts : []);
         setLocations(Array.isArray(locs) ? locs : []);
         setLoadingOptions(false);
@@ -162,9 +160,8 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
             Create audit cycle
           </DialogTitle>
           <DialogDescription className="text-ink-muted">
-            Scope department and/or location, set dates, and assign employees as auditors.
-            Creating the cycle snapshots every in-scope asset as a pending verification item
-            (status = open).
+            Scope department and/or location, set dates, and assign employees as auditors. Creating
+            the cycle snapshots every in-scope asset as a pending verification item (status = open).
           </DialogDescription>
         </DialogHeader>
 
@@ -172,7 +169,7 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
           {error && (
             <p
               role="alert"
-              className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              className="border-destructive/20 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
             >
               {error}
             </p>

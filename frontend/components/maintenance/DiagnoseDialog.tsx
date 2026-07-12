@@ -11,10 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  MAINTENANCE_STATUS_LABELS,
-  type MaintenanceRequest,
-} from "@/lib/api/maintenance";
+import { MAINTENANCE_STATUS_LABELS, type MaintenanceRequest } from "@/lib/api/maintenance";
 import { PriorityBadge } from "./PriorityBadge";
 
 type DiagnoseDialogProps = {
@@ -51,9 +48,7 @@ export function DiagnoseDialog({ request, open, onOpenChange }: DiagnoseDialogPr
         <DialogHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <DialogTitle className="font-mono text-base">
-                {request.asset_tag}
-              </DialogTitle>
+              <DialogTitle className="font-mono text-base">{request.asset_tag}</DialogTitle>
               <DialogDescription>
                 {request.asset_name} · {request.category_name}
               </DialogDescription>
@@ -81,17 +76,12 @@ export function DiagnoseDialog({ request, open, onOpenChange }: DiagnoseDialogPr
                 value={
                   <>
                     {request.approved_by_name}
-                    <span className="text-ink-muted">
-                      {" "}
-                      · {formatDate(request.approved_at)}
-                    </span>
+                    <span className="text-ink-muted"> · {formatDate(request.approved_at)}</span>
                   </>
                 }
               />
             )}
-            {request.technician_name && (
-              <Row label="Technician" value={request.technician_name} />
-            )}
+            {request.technician_name && <Row label="Technician" value={request.technician_name} />}
             {request.started_at && <Row label="Started" value={formatDate(request.started_at)} />}
             {request.resolved_at && (
               <Row label="Resolved" value={formatDate(request.resolved_at)} />
@@ -99,9 +89,7 @@ export function DiagnoseDialog({ request, open, onOpenChange }: DiagnoseDialogPr
             {request.estimated_cost && (
               <Row label="Estimated cost" value={`$${request.estimated_cost}`} />
             )}
-            {request.actual_cost && (
-              <Row label="Actual cost" value={`$${request.actual_cost}`} />
-            )}
+            {request.actual_cost && <Row label="Actual cost" value={`$${request.actual_cost}`} />}
             {request.rejection_reason && (
               <Row label="Rejection reason" value={request.rejection_reason} />
             )}

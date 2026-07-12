@@ -4,13 +4,7 @@ import { ApiError, getApiBaseUrl } from "@/lib/api/http";
 import { clearAccessToken, getAccessToken } from "@/lib/auth/tokenStorage";
 
 export type ExportResource =
-  | "departments"
-  | "categories"
-  | "employees"
-  | "assets"
-  | "holdings"
-  | "bookings"
-  | "maintenance";
+  "departments" | "categories" | "employees" | "assets" | "holdings" | "bookings" | "maintenance";
 
 /**
  * Authenticated binary fetch for CSV exports.

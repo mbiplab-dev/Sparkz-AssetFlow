@@ -84,12 +84,12 @@ export default function SignupPage() {
   }
 
   return (
-    <Card className="rounded-xl border border-border bg-card p-0 shadow-none ring-1 ring-border">
+    <Card className="border-border bg-card ring-border rounded-xl border p-0 shadow-none ring-1">
       <CardHeader className="gap-1.5 px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
-        <p className="font-display text-xs font-semibold tracking-wide text-primary uppercase">
+        <p className="font-display text-primary text-xs font-semibold tracking-wide uppercase">
           AssetFlow
         </p>
-        <CardTitle className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        <CardTitle className="font-display text-foreground text-xl font-bold tracking-tight sm:text-2xl">
           Create account
         </CardTitle>
         <CardDescription className="text-muted-foreground">
@@ -101,7 +101,7 @@ export default function SignupPage() {
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="border-destructive/20 bg-destructive/10 text-destructive mb-4 rounded-lg border px-3 py-2 text-sm"
           >
             {error}
           </div>
@@ -190,7 +190,7 @@ export default function SignupPage() {
               {fieldErrors.password ? (
                 <FieldError id="signup-password-error">{fieldErrors.password}</FieldError>
               ) : (
-                <p id="signup-password-hint" className="text-xs text-muted-foreground">
+                <p id="signup-password-hint" className="text-muted-foreground text-xs">
                   Minimum 8 characters.
                 </p>
               )}
@@ -207,10 +207,10 @@ export default function SignupPage() {
         </form>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-stretch border-t border-border bg-transparent px-4 py-4 sm:px-6 sm:py-5">
-        <p className="text-center text-sm text-muted-foreground">
+      <CardFooter className="border-border flex flex-col items-stretch border-t bg-transparent px-4 py-4 sm:px-6 sm:py-5">
+        <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link href="/login" className="text-primary font-medium hover:underline">
             Log in
           </Link>
         </p>

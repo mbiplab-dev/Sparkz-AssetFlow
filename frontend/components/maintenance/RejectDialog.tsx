@@ -15,10 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/http";
-import {
-  rejectMaintenance,
-  type MaintenanceRequest,
-} from "@/lib/api/maintenance";
+import { rejectMaintenance, type MaintenanceRequest } from "@/lib/api/maintenance";
 
 type RejectDialogProps = {
   request: MaintenanceRequest | null;
@@ -27,12 +24,7 @@ type RejectDialogProps = {
   onRejected: (req: MaintenanceRequest) => void;
 };
 
-export function RejectDialog({
-  request,
-  open,
-  onOpenChange,
-  onRejected,
-}: RejectDialogProps) {
+export function RejectDialog({ request, open, onOpenChange, onRejected }: RejectDialogProps) {
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 

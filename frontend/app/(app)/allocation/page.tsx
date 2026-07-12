@@ -57,7 +57,12 @@ import {
 import { ExportButton } from "@/components/ExportButton";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
-import { listDepartments, listEmployees, type Department, type Employee } from "@/lib/api/organization";
+import {
+  listDepartments,
+  listEmployees,
+  type Department,
+  type Employee,
+} from "@/lib/api/organization";
 
 type Bundle = {
   holdings: Holding[];
@@ -164,8 +169,7 @@ export default function AllocationPage() {
 
   // Active allocations = any holding with quantity > 0 that isn't the manager pool.
   const activeHoldings = useMemo(
-    () =>
-      holdings.filter((h) => h.quantity > 0 && h.holder_type !== "manager"),
+    () => holdings.filter((h) => h.quantity > 0 && h.holder_type !== "manager"),
     [holdings],
   );
 
@@ -429,7 +433,7 @@ export default function AllocationPage() {
                   const allocatedAt = lastAllocatedAt(h, transfers);
                   return (
                     <TableRow key={h.id}>
-                      <TableCell className="pl-4 font-medium text-ink">{h.asset_name}</TableCell>
+                      <TableCell className="text-ink pl-4 font-medium">{h.asset_name}</TableCell>
                       <TableCell className="text-ink">
                         {holderName(h.holder_type, h.holder_id, departments, employees)}
                       </TableCell>
@@ -547,7 +551,11 @@ export default function AllocationPage() {
               <Select
                 value={allocateForm.to_holder_type}
                 onValueChange={(v) =>
-                  setAllocateForm((f) => ({ ...f, to_holder_type: v as HolderType, to_holder_id: "" }))
+                  setAllocateForm((f) => ({
+                    ...f,
+                    to_holder_type: v as HolderType,
+                    to_holder_id: "",
+                  }))
                 }
               >
                 <SelectTrigger className="w-full">
@@ -618,22 +626,20 @@ export default function AllocationPage() {
                 type="number"
                 min={1}
                 value={allocateForm.quantity}
-                onChange={(e) =>
-                  setAllocateForm((f) => ({ ...f, quantity: e.target.value }))
-                }
+                onChange={(e) => setAllocateForm((f) => ({ ...f, quantity: e.target.value }))}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAllocateOpen(false)} disabled={allocateSaving}>
+            <Button
+              variant="outline"
+              onClick={() => setAllocateOpen(false)}
+              disabled={allocateSaving}
+            >
               Cancel
             </Button>
             <Button onClick={handleAllocate} disabled={allocateSaving} className="rounded-full">
-              {allocateSaving
-                ? "Working…"
-                : isManager
-                  ? "Allocate"
-                  : "Raise request"}
+              {allocateSaving ? "Working…" : isManager ? "Allocate" : "Raise request"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -759,9 +765,7 @@ export default function AllocationPage() {
               </label>
               <Select
                 value={transferForm.to_holder_id}
-                onValueChange={(v) =>
-                  setTransferForm((f) => ({ ...f, to_holder_id: v }))
-                }
+                onValueChange={(v) => setTransferForm((f) => ({ ...f, to_holder_id: v }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select new holder" />
@@ -826,9 +830,7 @@ export default function AllocationPage() {
                 min={1}
                 max={transferTarget?.quantity ?? 1}
                 value={transferForm.quantity}
-                onChange={(e) =>
-                  setTransferForm((f) => ({ ...f, quantity: e.target.value }))
-                }
+                onChange={(e) => setTransferForm((f) => ({ ...f, quantity: e.target.value }))}
               />
             </div>
           </div>

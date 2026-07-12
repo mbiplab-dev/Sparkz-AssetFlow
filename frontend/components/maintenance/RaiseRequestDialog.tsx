@@ -157,10 +157,7 @@ export function RaiseRequestDialog({
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-ink-secondary text-sm font-medium">Priority</label>
-            <Select
-              value={priority}
-              onValueChange={(v) => setPriority(v as MaintenancePriority)}
-            >
+            <Select value={priority} onValueChange={(v) => setPriority(v as MaintenancePriority)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -174,9 +171,7 @@ export function RaiseRequestDialog({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-ink-secondary text-sm font-medium">
-              Issue description *
-            </label>
+            <label className="text-ink-secondary text-sm font-medium">Issue description *</label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -200,11 +195,7 @@ export function RaiseRequestDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving} className="rounded-full">

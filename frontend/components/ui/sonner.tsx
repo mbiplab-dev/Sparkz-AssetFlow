@@ -66,7 +66,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--card-foreground)",
           "--normal-border": "var(--border)",
           "--success-bg": "var(--card)",
-          "--success-border": "color-mix(in oklab, var(--color-accent-green, #1aae39) 30%, transparent)",
+          "--success-border":
+            "color-mix(in oklab, var(--color-accent-green, #1aae39) 30%, transparent)",
           "--success-text": "var(--card-foreground)",
           "--error-bg": "var(--card)",
           "--error-border": "color-mix(in oklab, var(--destructive) 35%, transparent)",

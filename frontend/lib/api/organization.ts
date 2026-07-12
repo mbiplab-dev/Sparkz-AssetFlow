@@ -133,17 +133,11 @@ export async function listEmployees(params?: {
   return (await getJSON(withQuery("/api/org/employees/", params))) as Employee[];
 }
 
-export async function updateEmployeeRole(
-  id: number,
-  role: EmployeeRole,
-): Promise<Employee> {
+export async function updateEmployeeRole(id: number, role: EmployeeRole): Promise<Employee> {
   return (await sendJSON(`/api/org/employees/${id}/role/`, "PATCH", { role })) as Employee;
 }
 
-export async function updateEmployeeStatus(
-  id: number,
-  status: OrgStatus,
-): Promise<Employee> {
+export async function updateEmployeeStatus(id: number, status: OrgStatus): Promise<Employee> {
   return (await sendJSON(`/api/org/employees/${id}/status/`, "PATCH", { status })) as Employee;
 }
 

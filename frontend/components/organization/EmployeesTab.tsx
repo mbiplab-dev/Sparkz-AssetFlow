@@ -21,7 +21,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EmptySelectOptions, EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -166,7 +172,7 @@ export function EmployeesTab() {
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
-        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1 lg:min-w-[14rem] lg:flex-1 lg:max-w-xs">
+        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1 lg:max-w-xs lg:min-w-[14rem] lg:flex-1">
           <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
             placeholder="Search by name or email…"
@@ -240,7 +246,9 @@ export function EmployeesTab() {
                           <span className="text-ink truncate text-sm font-medium">
                             {emp.full_name}
                             {isSelf(emp) && (
-                              <span className="text-ink-faint ml-1.5 text-xs font-normal">(you)</span>
+                              <span className="text-ink-faint ml-1.5 text-xs font-normal">
+                                (you)
+                              </span>
                             )}
                           </span>
                           <span className="text-ink-muted truncate text-xs">{emp.email}</span>

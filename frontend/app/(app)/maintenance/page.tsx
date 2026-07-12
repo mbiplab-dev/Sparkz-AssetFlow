@@ -73,10 +73,7 @@ export default function MaintenancePage() {
   const [resolveFor, setResolveFor] = useState<MaintenanceRequest | null>(null);
   const [actionPending, setActionPending] = useState<number | null>(null);
 
-  const requestList = useMemo(
-    () => (Array.isArray(requests) ? requests : []),
-    [requests],
-  );
+  const requestList = useMemo(() => (Array.isArray(requests) ? requests : []), [requests]);
 
   const counts = useMemo(() => {
     const c: Record<MaintenanceStatus, number> = {
@@ -177,7 +174,10 @@ export default function MaintenancePage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={assetFilter || "__all__"} onValueChange={(v) => setAssetFilter(v === "__all__" ? "" : v)}>
+        <Select
+          value={assetFilter || "__all__"}
+          onValueChange={(v) => setAssetFilter(v === "__all__" ? "" : v)}
+        >
           <SelectTrigger className="w-56">
             <SelectValue placeholder="All assets" />
           </SelectTrigger>
@@ -190,7 +190,10 @@ export default function MaintenancePage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={priorityFilter || "__all__"} onValueChange={(v) => setPriorityFilter(v === "__all__" ? "" : v)}>
+        <Select
+          value={priorityFilter || "__all__"}
+          onValueChange={(v) => setPriorityFilter(v === "__all__" ? "" : v)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All priorities" />
           </SelectTrigger>
@@ -213,12 +216,7 @@ export default function MaintenancePage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-ink-muted text-xs">To:</span>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="w-40"
-          />
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
         </div>
       </div>
 

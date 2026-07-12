@@ -95,12 +95,12 @@ export default function LoginOtpPage() {
   }
 
   return (
-    <Card className="rounded-xl border border-border bg-card p-0 shadow-none ring-1 ring-border">
+    <Card className="border-border bg-card ring-border rounded-xl border p-0 shadow-none ring-1">
       <CardHeader className="gap-1.5 px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
-        <p className="font-display text-xs font-semibold tracking-wide text-primary uppercase">
+        <p className="font-display text-primary text-xs font-semibold tracking-wide uppercase">
           AssetFlow
         </p>
-        <CardTitle className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        <CardTitle className="font-display text-foreground text-xl font-bold tracking-tight sm:text-2xl">
           {step === "email" ? "Log in with OTP" : "Enter code"}
         </CardTitle>
         <CardDescription className="text-muted-foreground break-words">
@@ -114,7 +114,7 @@ export default function LoginOtpPage() {
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="border-destructive/20 bg-destructive/10 text-destructive mb-4 rounded-lg border px-3 py-2 text-sm"
           >
             {error}
           </div>
@@ -187,7 +187,7 @@ export default function LoginOtpPage() {
                 variant="ghost"
                 onClick={handleResend}
                 disabled={secondsRemaining > 0}
-                className="h-9 w-full text-sm font-medium text-muted-foreground"
+                className="text-muted-foreground h-9 w-full text-sm font-medium"
               >
                 {secondsRemaining > 0 ? `Resend code (${secondsRemaining}s)` : "Resend code"}
               </Button>
@@ -196,7 +196,7 @@ export default function LoginOtpPage() {
                 type="button"
                 variant="link"
                 onClick={handleBackToEmail}
-                className="h-auto p-0 text-sm font-medium text-primary"
+                className="text-primary h-auto p-0 text-sm font-medium"
               >
                 Use a different email
               </Button>
@@ -205,16 +205,16 @@ export default function LoginOtpPage() {
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col items-stretch gap-3 border-t border-border bg-transparent px-4 py-4 sm:px-6 sm:py-5">
+      <CardFooter className="border-border flex flex-col items-stretch gap-3 border-t bg-transparent px-4 py-4 sm:px-6 sm:py-5">
         <Link
           href="/login"
-          className="text-center text-sm font-medium text-primary hover:underline"
+          className="text-primary text-center text-sm font-medium hover:underline"
         >
           Log in with password instead
         </Link>
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">
+          <Link href="/signup" className="text-primary font-medium hover:underline">
             Create account
           </Link>
         </p>

@@ -21,10 +21,7 @@ import {
   type ExportResource,
 } from "@/lib/api/exports";
 import { ApiError } from "@/lib/api/http";
-import {
-  getDashboardReports,
-  type DashboardReports,
-} from "@/lib/api/dashboard";
+import { getDashboardReports, type DashboardReports } from "@/lib/api/dashboard";
 
 function ReportCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -96,9 +93,7 @@ function exportReportsCsv(reports: DashboardReports) {
 function exportReportsPdf(reports: DashboardReports) {
   const section = (title: string, pairs: [string, number][]) => {
     if (pairs.length === 0) return `<h2>${title}</h2><p>No data</p>`;
-    const rows = pairs
-      .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-      .join("");
+    const rows = pairs.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
     return `<h2>${title}</h2><table><thead><tr><th>Label</th><th>Count</th></tr></thead><tbody>${rows}</tbody></table>`;
   };
 
@@ -129,9 +124,7 @@ function exportReportsPdf(reports: DashboardReports) {
     ),
     section(
       "Booking load by hour",
-      reports.booking_load_by_hour
-        .filter((h) => h.count > 0)
-        .map((h) => [`${h.hour}:00`, h.count]),
+      reports.booking_load_by_hour.filter((h) => h.count > 0).map((h) => [`${h.hour}:00`, h.count]),
     ),
     `<h2>Overdue / stale requests</h2><p>${reports.overdue_returns_count}</p>`,
   ].join("");
@@ -245,7 +238,7 @@ export default function ReportsPage() {
                     ).map(([label, value]) => (
                       <div
                         key={label}
-                        className="border-border rounded-lg border bg-muted/30 px-3 py-2.5"
+                        className="border-border bg-muted/30 rounded-lg border px-3 py-2.5"
                       >
                         <p className="text-ink-muted text-xs font-medium">{label}</p>
                         <p className="font-display text-ink mt-0.5 text-2xl font-bold tabular-nums">
@@ -312,9 +305,7 @@ export default function ReportsPage() {
         <Can capability="exports.download">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-ink text-sm font-semibold">
-                Dataset exports
-              </CardTitle>
+              <CardTitle className="text-ink text-sm font-semibold">Dataset exports</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-ink-muted mb-3 text-sm">

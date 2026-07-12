@@ -49,7 +49,7 @@ export default function OrganizationPage() {
       </div>
 
       <Tabs defaultValue="departments" className="min-w-0">
-        <div className="scrollbar-thin -mx-1 overflow-x-auto px-1">
+        <div className="-mx-1 scrollbar-thin overflow-x-auto px-1">
           <TabsList className="h-auto min-w-max">
             <TabsTrigger value="departments" className="px-2.5 sm:px-3">
               <Building2 />

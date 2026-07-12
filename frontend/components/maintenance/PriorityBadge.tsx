@@ -1,8 +1,5 @@
 import { cn } from "@/lib/utils";
-import {
-  MAINTENANCE_PRIORITY_LABELS,
-  type MaintenancePriority,
-} from "@/lib/api/maintenance";
+import { MAINTENANCE_PRIORITY_LABELS, type MaintenancePriority } from "@/lib/api/maintenance";
 
 const PRIORITY_TINTS: Record<MaintenancePriority, string> = {
   low: "border-border bg-muted text-ink-muted",

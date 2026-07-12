@@ -69,12 +69,7 @@ export function EmptyState({
   children?: ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-2 px-4 py-12 text-center",
-        className,
-      )}
-    >
+    <div className={cn("flex flex-col items-center gap-2 px-4 py-12 text-center", className)}>
       <span className="bg-muted flex size-11 items-center justify-center rounded-xl">
         <Icon className="text-ink-faint size-5" />
       </span>

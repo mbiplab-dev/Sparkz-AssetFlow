@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftRight, CalendarPlus, ClipboardCheck, Package, PackagePlus, Wrench } from "lucide-react";
+import {
+  ArrowLeftRight,
+  CalendarPlus,
+  ClipboardCheck,
+  Package,
+  PackagePlus,
+  Wrench,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/lib/auth/permissions";

@@ -7,8 +7,7 @@ import type { NextConfig } from "next";
  * Cloudflare tunnels and when the browser must not call localhost:8000).
  * Django routes require trailing slashes — keep skipTrailingSlashRedirect.
  */
-const backendOrigin =
-  process.env.BACKEND_ORIGIN?.replace(/\/$/, "") || "http://127.0.0.1:8000";
+const backendOrigin = process.env.BACKEND_ORIGIN?.replace(/\/$/, "") || "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,

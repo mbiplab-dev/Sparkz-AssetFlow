@@ -3,13 +3,7 @@ import { authRequest } from "@/lib/api/client";
 export type MaintenancePriority = "low" | "medium" | "high" | "critical";
 
 export type MaintenanceStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "assigned"
-  | "in_progress"
-  | "resolved"
-  | "cancelled";
+  "pending" | "approved" | "rejected" | "assigned" | "in_progress" | "resolved" | "cancelled";
 
 export const MAINTENANCE_PRIORITY_LABELS: Record<MaintenancePriority, string> = {
   low: "Low",
@@ -103,10 +97,7 @@ export async function approveMaintenance(id: number): Promise<MaintenanceRequest
   })) as MaintenanceRequest;
 }
 
-export async function rejectMaintenance(
-  id: number,
-  reason: string,
-): Promise<MaintenanceRequest> {
+export async function rejectMaintenance(id: number, reason: string): Promise<MaintenanceRequest> {
   return (await authRequest(`/api/maintenance/requests/${id}/reject/`, {
     method: "POST",
     body: JSON.stringify({ reason }),

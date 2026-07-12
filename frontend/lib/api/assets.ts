@@ -1,13 +1,7 @@
 import { authRequest } from "@/lib/api/client";
 
 export type AssetStatus =
-  | "available"
-  | "allocated"
-  | "reserved"
-  | "under_maintenance"
-  | "lost"
-  | "retired"
-  | "disposed";
+  "available" | "allocated" | "reserved" | "under_maintenance" | "lost" | "retired" | "disposed";
 
 export type AssetCondition = "new" | "good" | "fair" | "poor" | "damaged";
 

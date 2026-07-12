@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  MoreHorizontal,
+  Package,
+  PackagePlus,
+  Pencil,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +35,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EmptySelectOptions, EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -132,14 +146,10 @@ export default function AssetsPage() {
         listDepartmentsSimple().catch(() => [] as Department[]),
         listLocations().catch(() => [] as Location[]),
         // Employee: real quantity holdings (what is actually assigned to them).
-        isEmployee
-          ? listHoldings().catch(() => [] as Holding[])
-          : Promise.resolve([] as Holding[]),
+        isEmployee ? listHoldings().catch(() => [] as Holding[]) : Promise.resolve([] as Holding[]),
       ]).then(([assetList, cats, depts, locs, holdings]) => {
         setAssets(Array.isArray(assetList) ? assetList : []);
-        setCategories(
-          (Array.isArray(cats) ? cats : []).map((c) => ({ id: c.id, name: c.name })),
-        );
+        setCategories((Array.isArray(cats) ? cats : []).map((c) => ({ id: c.id, name: c.name })));
         setDepartments(
           (Array.isArray(depts) ? depts : []).map((d) => ({ id: d.id, name: d.name })),
         );
@@ -250,9 +260,7 @@ export default function AssetsPage() {
       {isEmployee && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="font-display text-base font-semibold">
-              Allocated to you
-            </CardTitle>
+            <CardTitle className="font-display text-base font-semibold">Allocated to you</CardTitle>
             <Button asChild variant="outline" size="sm" className="rounded-full">
               <Link href="/allocation">
                 Manage returns
@@ -278,13 +286,12 @@ export default function AssetsPage() {
             ) : (
               <ul className="divide-border divide-y rounded-md border">
                 {myHoldings.map((h) => (
-                  <li
-                    key={h.id}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5"
-                  >
+                  <li key={h.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
                     <div className="min-w-0">
                       <p className="text-ink truncate text-sm font-medium">{h.asset_name}</p>
-                      <p className="text-ink-muted text-xs">Assigned holding · return from Allocation</p>
+                      <p className="text-ink-muted text-xs">
+                        Assigned holding · return from Allocation
+                      </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0 tabular-nums">
                       ×{h.quantity}
@@ -316,7 +323,10 @@ export default function AssetsPage() {
             className="w-full pl-8"
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | AssetStatus)}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as "all" | AssetStatus)}
+        >
           <SelectTrigger className="w-full lg:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -351,7 +361,10 @@ export default function AssetsPage() {
             )}
           </SelectContent>
         </Select>
-        <Select value={bookableFilter} onValueChange={(v) => setBookableFilter(v as "all" | "true" | "false")}>
+        <Select
+          value={bookableFilter}
+          onValueChange={(v) => setBookableFilter(v as "all" | "true" | "false")}
+        >
           <SelectTrigger className="w-full lg:w-36">
             <SelectValue />
           </SelectTrigger>
@@ -400,10 +413,10 @@ export default function AssetsPage() {
               <TableBody>
                 {assets.map((asset) => (
                   <TableRow key={asset.id}>
-                    <TableCell className="pl-4 font-mono text-xs font-medium text-ink">
+                    <TableCell className="text-ink pl-4 font-mono text-xs font-medium">
                       {asset.asset_tag}
                     </TableCell>
-                    <TableCell className="font-medium text-ink">{asset.name}</TableCell>
+                    <TableCell className="text-ink font-medium">{asset.name}</TableCell>
                     <TableCell className="text-ink-muted">{asset.category_name}</TableCell>
                     <TableCell className="text-ink-muted">{asset.serial_number || "—"}</TableCell>
                     <TableCell>
@@ -493,7 +506,7 @@ export default function AssetsPage() {
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. MacBook Pro 14&quot;"
+                placeholder='e.g. MacBook Pro 14"'
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -555,7 +568,9 @@ export default function AssetsPage() {
               <label className="text-ink-secondary text-sm font-medium">Department</label>
               <Select
                 value={form.department?.toString() ?? "none"}
-                onValueChange={(v) => setForm({ ...form, department: v === "none" ? null : Number(v) })}
+                onValueChange={(v) =>
+                  setForm({ ...form, department: v === "none" ? null : Number(v) })
+                }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="No department" />

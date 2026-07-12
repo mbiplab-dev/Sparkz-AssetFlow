@@ -23,7 +23,8 @@ export function useAsyncList<T>(fetcher: Fetcher<T>, deps: unknown[]) {
 
   const reload = useCallback(() => {
     const controller = new AbortController();
-    fetcherRef.current(controller.signal)
+    fetcherRef
+      .current(controller.signal)
       .then((result) => {
         setData(result);
         setError(null);

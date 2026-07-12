@@ -12,10 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  CreateCycleDialog,
-  type CreateCycleFormInput,
-} from "@/components/audit/CreateCycleDialog";
+import { CreateCycleDialog, type CreateCycleFormInput } from "@/components/audit/CreateCycleDialog";
 import { CycleDetailSheet } from "@/components/audit/CycleDetailSheet";
 import { CycleStatusBadge } from "@/components/audit/CycleStatusBadge";
 import { Button } from "@/components/ui/button";
@@ -93,9 +90,7 @@ export default function AuditPage() {
   );
 
   const selectedCanAudit =
-    !!selected &&
-    selected.status === "open" &&
-    (canManage || isCycleAuditor(selected, userId));
+    !!selected && selected.status === "open" && (canManage || isCycleAuditor(selected, userId));
 
   const loadDetail = useCallback(async (cycleId: number) => {
     setDetailLoading(true);
@@ -306,7 +301,7 @@ export default function AuditPage() {
         {error && (
           <p
             role="alert"
-            className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="border-destructive/20 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
           >
             {error}
           </p>
@@ -392,15 +387,14 @@ export default function AuditPage() {
                                 <span className="text-ink text-sm font-medium">{cycle.name}</span>
                                 <span className="text-ink-faint text-xs">
                                   {cycle.auditors.length} auditor
-                                  {cycle.auditors.length === 1 ? "" : "s"} ·{" "}
-                                  {cycle.created_by_name}
+                                  {cycle.auditors.length === 1 ? "" : "s"} · {cycle.created_by_name}
                                 </span>
                               </div>
                             </TableCell>
                             <TableCell className="text-ink-muted text-sm">
                               {scopeLabel(cycle)}
                             </TableCell>
-                            <TableCell className="text-ink-muted whitespace-nowrap text-sm">
+                            <TableCell className="text-ink-muted text-sm whitespace-nowrap">
                               {cycle.starts_on} → {cycle.ends_on}
                             </TableCell>
                             <TableCell>
@@ -412,15 +406,11 @@ export default function AuditPage() {
                                   <div
                                     className={cn(
                                       "h-full rounded-full transition-all",
-                                      cycle.status === "closed"
-                                        ? "bg-accent-green"
-                                        : "bg-primary",
+                                      cycle.status === "closed" ? "bg-accent-green" : "bg-primary",
                                     )}
                                     style={{
                                       width:
-                                        total === 0
-                                          ? "0%"
-                                          : `${Math.round((done / total) * 100)}%`,
+                                        total === 0 ? "0%" : `${Math.round((done / total) * 100)}%`,
                                     }}
                                   />
                                 </div>

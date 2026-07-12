@@ -41,14 +41,14 @@ function qs(params: Record<string, string | number | undefined>): string {
   return s ? `?${s}` : "";
 }
 
-export async function listBookings(params: {
-  asset?: number;
-  starts_after?: string;
-  ends_before?: string;
-} = {}): Promise<Booking[]> {
-  const res = (await authRequest(`${BASE}${qs(params)}`)) as
-    | Booking[]
-    | { results: Booking[] };
+export async function listBookings(
+  params: {
+    asset?: number;
+    starts_after?: string;
+    ends_before?: string;
+  } = {},
+): Promise<Booking[]> {
+  const res = (await authRequest(`${BASE}${qs(params)}`)) as Booking[] | { results: Booking[] };
   return Array.isArray(res) ? res : res.results;
 }
 

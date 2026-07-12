@@ -4,19 +4,10 @@ import { authRequest } from "@/lib/api/client";
 
 export type HolderType = "manager" | "department" | "employee";
 
-export type RequestStatus =
-  | "open"
-  | "partially_fulfilled"
-  | "fulfilled"
-  | "rejected"
-  | "cancelled";
+export type RequestStatus = "open" | "partially_fulfilled" | "fulfilled" | "rejected" | "cancelled";
 
 export type TransferKind =
-  | "allocate"
-  | "sub_allocate"
-  | "fulfill_request"
-  | "peer_transfer"
-  | "return";
+  "allocate" | "sub_allocate" | "fulfill_request" | "peer_transfer" | "return";
 
 /** Quantity-tracked asset in the resource_allocation catalog. */
 export type ResourceAsset = {

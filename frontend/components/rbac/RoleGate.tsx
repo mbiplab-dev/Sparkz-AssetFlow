@@ -22,11 +22,7 @@ export function Can({
   fallback?: ReactNode;
 }) {
   const { user } = useAuth();
-  const allowed = anyOf
-    ? canAny(user, anyOf)
-    : capability
-      ? can(user, capability)
-      : true;
+  const allowed = anyOf ? canAny(user, anyOf) : capability ? can(user, capability) : true;
   return allowed ? <>{children}</> : <>{fallback}</>;
 }
 
@@ -72,11 +68,7 @@ export function RoleGate({
   children: ReactNode;
 }) {
   const { user } = useAuth();
-  const allowed = anyOf
-    ? canAny(user, anyOf)
-    : capability
-      ? can(user, capability)
-      : true;
+  const allowed = anyOf ? canAny(user, anyOf) : capability ? can(user, capability) : true;
 
   if (!allowed) {
     return <AccessDenied title={title} description={description} />;

@@ -89,10 +89,7 @@ export async function closeAuditCycle(id: number): Promise<AuditCycle> {
 }
 
 /** POST /api/audits/cycles/:id/auditors/ — replace full auditor list (employees only). */
-export async function setCycleAuditors(
-  cycleId: number,
-  auditorIds: number[],
-): Promise<AuditCycle> {
+export async function setCycleAuditors(cycleId: number, auditorIds: number[]): Promise<AuditCycle> {
   return (await authRequest(`${BASE}/cycles/${cycleId}/auditors/`, {
     method: "POST",
     body: JSON.stringify({ auditor_ids: auditorIds }),

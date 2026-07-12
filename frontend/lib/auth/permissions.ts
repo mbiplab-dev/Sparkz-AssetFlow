@@ -144,10 +144,7 @@ export function useCan(capability: Capability): boolean {
 }
 
 /** True if the user has at least one of the listed capabilities. */
-export function canAny(
-  user: AuthUser | null | undefined,
-  capabilities: Capability[],
-): boolean {
+export function canAny(user: AuthUser | null | undefined, capabilities: Capability[]): boolean {
   return capabilities.some((c) => can(user, c));
 }
 

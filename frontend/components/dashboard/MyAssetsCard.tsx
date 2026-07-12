@@ -70,10 +70,7 @@ export function MyAssetsCard() {
         <div>
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-ink-secondary text-sm font-medium">Allocated to you</p>
-            <Link
-              href="/allocation"
-              className="text-primary text-xs font-medium hover:underline"
-            >
+            <Link href="/allocation" className="text-primary text-xs font-medium hover:underline">
               View all
             </Link>
           </div>
@@ -124,7 +121,9 @@ export function MyAssetsCard() {
               href={href}
               className="group hover:bg-muted/70 -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors"
             >
-              <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", bg)}>
+              <span
+                className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", bg)}
+              >
                 <Icon className={cn("size-4", tint)} />
               </span>
               <span className="flex min-w-0 flex-1 flex-col">

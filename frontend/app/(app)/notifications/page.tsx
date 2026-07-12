@@ -56,8 +56,7 @@ export default function NotificationsPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message =
-          err instanceof ApiError ? err.message : "Failed to load notifications.";
+        const message = err instanceof ApiError ? err.message : "Failed to load notifications.";
         toast.error(message);
       })
       .finally(() => {
@@ -74,8 +73,7 @@ export default function NotificationsPage() {
   );
 
   const unreadCount = useMemo(
-    () =>
-      items.filter((it) => new Date(it.timestamp).getTime() > lastSeenAt).length,
+    () => items.filter((it) => new Date(it.timestamp).getTime() > lastSeenAt).length,
     [items, lastSeenAt],
   );
 
@@ -83,21 +81,20 @@ export default function NotificationsPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-medium leading-tight">
+          <h1 className="font-heading text-2xl leading-tight font-medium">
             Notifications & Activity Log
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A live feed of maintenance, bookings, and allocations across your
-            organization.
+          <p className="text-muted-foreground mt-1 text-sm">
+            A live feed of maintenance, bookings, and allocations across your organization.
           </p>
         </div>
-        <span className="inline-flex h-6 items-center rounded-full bg-primary/10 px-2.5 text-xs font-medium text-primary">
+        <span className="bg-primary/10 text-primary inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium">
           Unread {unreadCount}
         </span>
       </header>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Filter</span>
+        <span className="text-muted-foreground text-xs">Filter</span>
         <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <SelectTrigger className="w-40">
             <SelectValue />
@@ -119,7 +116,7 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex min-h-48 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex min-h-48 items-center justify-center rounded-xl border border-dashed text-sm">
           No activity yet
         </div>
       ) : (
@@ -138,7 +135,7 @@ export default function NotificationsPage() {
               >
                 <div
                   className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground",
+                    "bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg",
                     overdue && "bg-destructive/10 text-destructive",
                   )}
                 >
@@ -147,21 +144,17 @@ export default function NotificationsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate font-medium">{item.title}</p>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="text-muted-foreground shrink-0 text-xs">
                       {formatDistanceToNow(new Date(item.timestamp), {
                         addSuffix: true,
                       })}
                     </span>
                   </div>
                   {item.body ? (
-                    <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
-                      {item.body}
-                    </p>
+                    <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">{item.body}</p>
                   ) : null}
                   {item.actor_name ? (
-                    <p className="mt-1 text-xs text-muted-foreground/80">
-                      by {item.actor_name}
-                    </p>
+                    <p className="text-muted-foreground/80 mt-1 text-xs">by {item.actor_name}</p>
                   ) : null}
                 </div>
               </Card>

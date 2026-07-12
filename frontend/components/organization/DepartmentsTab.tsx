@@ -137,9 +137,7 @@ export function DepartmentsTab() {
   async function handleDeactivate(id: number) {
     try {
       await deactivateDepartment(id);
-      setDepartments((prev) =>
-        prev.map((d) => (d.id === id ? { ...d, status: "inactive" } : d)),
-      );
+      setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, status: "inactive" } : d)));
       toast.success("Department deactivated");
     } catch (err) {
       toast.error("Failed to deactivate department", {
@@ -154,7 +152,7 @@ export function DepartmentsTab() {
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-center">
-          <div className="relative min-w-0 sm:min-w-[14rem] sm:flex-1 sm:max-w-xs">
+          <div className="relative min-w-0 sm:max-w-xs sm:min-w-[14rem] sm:flex-1">
             <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
             <Input
               placeholder="Search departments…"
@@ -163,7 +161,10 @@ export function DepartmentsTab() {
               className="w-full pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | OrgStatus)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as "all" | OrgStatus)}
+          >
             <SelectTrigger className="w-full sm:w-36">
               <SelectValue />
             </SelectTrigger>
@@ -218,7 +219,7 @@ export function DepartmentsTab() {
               <TableBody>
                 {departments.map((dept) => (
                   <TableRow key={dept.id}>
-                    <TableCell className="pl-4 font-medium text-ink">{dept.name}</TableCell>
+                    <TableCell className="text-ink pl-4 font-medium">{dept.name}</TableCell>
                     <TableCell className="text-ink-muted">{dept.code || "—"}</TableCell>
                     <TableCell className="text-ink-muted">{dept.parent_name || "—"}</TableCell>
                     <TableCell className="text-ink-muted">{dept.head_name || "—"}</TableCell>
@@ -299,9 +300,7 @@ export function DepartmentsTab() {
               <label className="text-ink-secondary text-sm font-medium">Parent department</label>
               <Select
                 value={form.parent?.toString() ?? "none"}
-                onValueChange={(v) =>
-                  setForm({ ...form, parent: v === "none" ? null : Number(v) })
-                }
+                onValueChange={(v) => setForm({ ...form, parent: v === "none" ? null : Number(v) })}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="No parent" />
@@ -329,9 +328,7 @@ export function DepartmentsTab() {
               <label className="text-ink-secondary text-sm font-medium">Department head</label>
               <Select
                 value={form.head?.toString() ?? "none"}
-                onValueChange={(v) =>
-                  setForm({ ...form, head: v === "none" ? null : Number(v) })
-                }
+                onValueChange={(v) => setForm({ ...form, head: v === "none" ? null : Number(v) })}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Unassigned" />

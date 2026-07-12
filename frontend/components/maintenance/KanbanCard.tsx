@@ -54,7 +54,7 @@ export function KanbanCard({
   const s = request.status;
 
   return (
-    <Card className="flex flex-col gap-2 rounded-lg border border-border/70 bg-card p-3 shadow-none transition-colors hover:border-border">
+    <Card className="border-border/70 bg-card hover:border-border flex flex-col gap-2 rounded-lg border p-3 shadow-none transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-ink font-mono text-sm font-semibold">{request.asset_tag}</div>
@@ -117,7 +117,7 @@ export function KanbanCard({
         </div>
       )}
 
-      <div className="mt-1 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">
+      <div className="border-border/60 mt-1 flex flex-wrap gap-1.5 border-t pt-2">
         <Button
           size="sm"
           variant="ghost"

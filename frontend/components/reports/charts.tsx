@@ -56,9 +56,7 @@ export function DonutChart({
   const cx = r;
   const cy = r;
 
-  const cumValues = slices.map((_, i) =>
-    slices.slice(0, i).reduce((sum, s) => sum + s.value, 0),
-  );
+  const cumValues = slices.map((_, i) => slices.slice(0, i).reduce((sum, s) => sum + s.value, 0));
   const arcs = slices.map((s, i) => {
     const start = -Math.PI / 2 + (cumValues[i]! / total) * Math.PI * 2;
     const sweep = (s.value / total) * Math.PI * 2;
@@ -86,7 +84,12 @@ export function DonutChart({
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
         {arcs.map((a) => (
-          <path key={a.label} d={a.d} fill={a.color} className="transition-opacity hover:opacity-80">
+          <path
+            key={a.label}
+            d={a.d}
+            fill={a.color}
+            className="transition-opacity hover:opacity-80"
+          >
             <title>
               {a.label}: {a.value}
             </title>
@@ -187,11 +190,7 @@ export function VerticalBarChart({
 }
 
 /** Horizontal bar chart — clearer for many long labels (fallback layout). */
-export function HorizontalBarChart({
-  data,
-}: {
-  data: { label: string; value: number }[];
-}) {
+export function HorizontalBarChart({ data }: { data: { label: string; value: number }[] }) {
   if (data.length === 0) {
     return <p className="text-ink-muted text-sm">No data yet.</p>;
   }
@@ -203,7 +202,10 @@ export function HorizontalBarChart({
         const pct = Math.max(4, Math.round((d.value / max) * 100));
         return (
           <div key={d.label} className="flex items-center gap-3">
-            <span className="text-ink w-28 shrink-0 truncate text-xs sm:w-36 sm:text-sm" title={d.label}>
+            <span
+              className="text-ink w-28 shrink-0 truncate text-xs sm:w-36 sm:text-sm"
+              title={d.label}
+            >
               {d.label}
             </span>
             <div className="bg-muted relative h-3 min-w-0 flex-1 overflow-hidden rounded-full">
@@ -292,7 +294,15 @@ export function AreaChart({
         />
         {points.map((p) =>
           p.count > 0 ? (
-            <circle key={p.hour} cx={p.x} cy={p.y} r={3.5} fill="#0075de" stroke="#fff" strokeWidth="1.5">
+            <circle
+              key={p.hour}
+              cx={p.x}
+              cy={p.y}
+              r={3.5}
+              fill="#0075de"
+              stroke="#fff"
+              strokeWidth="1.5"
+            >
               <title>
                 {p.hour}:00 — {p.count} bookings
               </title>

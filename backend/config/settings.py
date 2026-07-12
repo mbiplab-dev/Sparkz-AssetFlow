@@ -168,7 +168,10 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api",
     "SORT_OPERATIONS": False,
     "TAGS": [
-        {"name": "Authentication", "description": "Signup, login, OTP, password reset, JWT session."},
+        {
+            "name": "Authentication",
+            "description": "Signup, login, OTP, password reset, JWT session.",
+        },
         {
             "name": "Organization / Departments",
             "description": "Admin CRUD for departments.",

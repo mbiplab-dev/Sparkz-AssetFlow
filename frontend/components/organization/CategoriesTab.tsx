@@ -21,7 +21,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -122,7 +128,7 @@ export function CategoriesTab() {
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-center">
-          <div className="relative min-w-0 sm:min-w-[14rem] sm:flex-1 sm:max-w-xs">
+          <div className="relative min-w-0 sm:max-w-xs sm:min-w-[14rem] sm:flex-1">
             <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
             <Input
               placeholder="Search categories…"
@@ -131,7 +137,10 @@ export function CategoriesTab() {
               className="w-full pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | OrgStatus)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as "all" | OrgStatus)}
+          >
             <SelectTrigger className="w-full sm:w-36">
               <SelectValue />
             </SelectTrigger>
@@ -165,7 +174,9 @@ export function CategoriesTab() {
                 <LayoutGrid className="text-accent-teal size-5" />
               </span>
               <p className="text-ink-secondary text-sm font-medium">No categories yet</p>
-              <p className="text-ink-muted text-sm">Create categories like Electronics, Furniture, or Vehicles.</p>
+              <p className="text-ink-muted text-sm">
+                Create categories like Electronics, Furniture, or Vehicles.
+              </p>
               <Button onClick={openCreate} variant="outline" className="mt-1 rounded-full">
                 <Plus />
                 Add Category
@@ -184,7 +195,7 @@ export function CategoriesTab() {
               <TableBody>
                 {categories.map((cat) => (
                   <TableRow key={cat.id}>
-                    <TableCell className="pl-4 font-medium text-ink">{cat.name}</TableCell>
+                    <TableCell className="text-ink pl-4 font-medium">{cat.name}</TableCell>
                     <TableCell className="text-ink-muted max-w-xs truncate">
                       {cat.description || "—"}
                     </TableCell>
