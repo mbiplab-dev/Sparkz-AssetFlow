@@ -29,6 +29,29 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const DEMO_EMAIL = "admin@assetflow.local";
+  const DEMO_PASSWORD = "Admin@12345";
+
+  async function handleDemoLogin() {
+    setError(null);
+    setFieldErrors({});
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    setIsSubmitting(true);
+    try {
+      await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      router.push("/dashboard");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Demo login failed. The seeded admin may not exist yet — run `make init-db`.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   function validate(): boolean {
     const next = {
       email: validateEmail(email) ?? undefined,
@@ -134,6 +157,20 @@ export default function LoginPage() {
             >
               {isSubmitting ? "Logging in…" : "Log in"}
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={handleDemoLogin}
+              className="h-10 w-full rounded-full text-sm font-medium"
+            >
+              Continue as demo admin
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Uses <span className="font-mono">{DEMO_EMAIL}</span> — seeded on first{" "}
+              <span className="font-mono">make init-db</span>.
+            </p>
           </FieldGroup>
         </form>
       </CardContent>

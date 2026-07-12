@@ -24,3 +24,53 @@ export type DashboardSummary = {
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return (await authRequest("/api/dashboard/summary/")) as DashboardSummary;
 }
+
+export type CategoryCount = { category: string; count: number };
+export type DepartmentCount = { department: string; count: number };
+export type TopUsedAsset = {
+  asset_id: number;
+  asset_tag: string;
+  name: string;
+  count: number;
+};
+export type BookingHourLoad = { hour: number; count: number };
+
+export type DashboardReports = {
+  assets_by_status: Record<string, number>;
+  assets_by_category: CategoryCount[];
+  assets_by_department: DepartmentCount[];
+  maintenance_by_status: Record<string, number>;
+  maintenance_by_category: CategoryCount[];
+  top_used_assets: TopUsedAsset[];
+  booking_load_by_hour: BookingHourLoad[];
+  overdue_returns_count: number;
+};
+
+export async function getDashboardReports(): Promise<DashboardReports> {
+  return (await authRequest("/api/dashboard/reports/")) as DashboardReports;
+}
+
+export type NotificationKind =
+  | "maintenance_created"
+  | "maintenance_approved"
+  | "maintenance_resolved"
+  | "booking_created"
+  | "booking_cancelled"
+  | "asset_allocated"
+  | "overdue_return";
+
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  entity: string;
+  entity_id: number;
+  actor_name?: string | null;
+  timestamp: string;
+  is_overdue?: boolean;
+};
+
+export async function listNotifications(): Promise<NotificationItem[]> {
+  return (await authRequest("/api/dashboard/notifications/")) as NotificationItem[];
+}
