@@ -24,4 +24,11 @@ next-env.d.ts
 .vscode/
 *.log
 
+*.md
+*.txt
+!README.md
+AssetFlow problem statement.md
+
+# Claude / AI agent local files
+.claude/
 # Docker volumes
