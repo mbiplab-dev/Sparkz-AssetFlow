@@ -2,11 +2,16 @@ import { authRequest } from "@/lib/api/client";
 import { request } from "@/lib/api/http";
 import { clearAccessToken, setAccessToken } from "./tokenStorage";
 
+/** Matches backend UserSerializer (`apps.authentication.serializers.UserSerializer`). */
 export type AuthUser = {
   id: number;
   email: string;
-  name: string;
-  age: number;
+  full_name: string;
+  phone: string;
+  role: string;
+  status: string;
+  department: number | null;
+  department_name: string | null;
 };
 
 export type AuthSession = {
@@ -19,10 +24,11 @@ export type LoginInput = {
   password: string;
 };
 
-export type SignupOtpRequestInput = {
-  name: string;
-  age: number;
+/** Payload for direct registration (no email/phone OTP on signup). */
+export type RegisterInput = {
+  full_name: string;
   email: string;
+  phone: string;
   password: string;
 };
 
@@ -40,17 +46,17 @@ export async function login(input: LoginInput): Promise<AuthSession> {
   return session;
 }
 
-/** Validates signup details and emails a verification code. Creates no user yet. */
-export async function requestSignupOtp(input: SignupOtpRequestInput): Promise<{ detail: string }> {
-  return (await request("/api/auth/register/request-otp/", {
-    method: "POST",
-    body: JSON.stringify(input),
-  })) as { detail: string };
-}
-
-/** Verifies the signup code, which creates the account and logs the user in. */
-export async function verifySignupOtp(input: OtpVerifyInput): Promise<AuthSession> {
-  const session = (await request("/api/auth/register/verify-otp/", {
+/**
+ * Create an employee account and log in.
+ *
+ * Expected: POST /api/auth/register/ → { access, user } + refresh cookie.
+ * Backend currently only exposes OTP-gated signup routes
+ * (`register/request-otp/`, `register/verify-otp/`). Product registration
+ * has no OTP step — backend needs a direct register endpoint (or equivalent).
+ * See FRONTEND_CHANGELOG.md.
+ */
+export async function register(input: RegisterInput): Promise<AuthSession> {
+  const session = (await request("/api/auth/register/", {
     method: "POST",
     body: JSON.stringify(input),
   })) as AuthSession;
