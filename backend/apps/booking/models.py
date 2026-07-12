@@ -1,8 +1,18 @@
 from django.conf import settings
+from django.contrib.postgres.constraints import ExclusionConstraint
+from django.contrib.postgres.fields import DateTimeRangeField
 from django.db import models
+from django.db.models.expressions import Func, F
 
 from apps.assets.models import Asset
 from apps.organization.models import Department
+
+
+class TstzRange(Func):
+    """Postgres tstzrange(starts_at, ends_at, '[)') expression."""
+
+    function = "tstzrange"
+    output_field = DateTimeRangeField()
 
 
 class BookingStatus(models.TextChoices):
@@ -69,6 +79,21 @@ class Booking(models.Model):
             models.CheckConstraint(
                 check=models.Q(ends_at__gt=models.F("starts_at")),
                 name="booking_ends_after_starts",
+            ),
+            ExclusionConstraint(
+                name="booking_no_overlap",
+                expressions=[
+                    ("asset", "="),
+                    (
+                        TstzRange(
+                            F("starts_at"),
+                            F("ends_at"),
+                            models.Value("[)"),
+                        ),
+                        "&&",
+                    ),
+                ],
+                condition=models.Q(status__in=("upcoming", "ongoing")),
             ),
         ]
 
