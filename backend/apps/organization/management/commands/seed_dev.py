@@ -21,6 +21,7 @@ from faker import Faker
 from apps.assets.models import Asset, AssetCondition, AssetStatus, Location
 from apps.authentication.models import User, UserRole, UserStatus
 from apps.organization.models import AssetCategory, Department
+from apps.resource_allocation.models import Asset as ResourceAsset
 
 
 DEPARTMENTS = [
@@ -97,6 +98,7 @@ class Command(BaseCommand):
         locs = self._seed_locations()
         managers, heads, employees = self._seed_users(fake, depts, opts["employees"])
         self._seed_assets(fake, cats, depts, locs, opts["assets"])
+        self._seed_resource_assets(cats, managers[0] if managers else None)
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -256,4 +258,32 @@ class Command(BaseCommand):
                 department=random.choice(depts),
                 is_bookable=cat.name == "Meeting Rooms",
                 notes=fake.sentence(nb_words=8) if random.random() < 0.3 else "",
+            )
+
+    def _seed_resource_assets(self, cats: list[AssetCategory], created_by: User | None):
+        """Seed the resource_allocation quantity-tracked catalog for the Allocate dialog."""
+        if ResourceAsset.objects.exists():
+            return
+        if created_by is None:
+            created_by = User.objects.filter(role=UserRole.ADMIN).first()
+        if created_by is None:
+            return
+        by_name = {c.name: c for c in cats}
+        items = [
+            ("MacBook Pro 14\"", "IT Equipment", 25),
+            ("ThinkPad X1", "IT Equipment", 30),
+            ("Dell Monitor 27\"", "Electronics", 40),
+            ("USB-C Hub", "Electronics", 60),
+            ("Ergonomic Chair", "Furniture", 50),
+            ("Standing Desk", "Furniture", 20),
+            ("Company Van — Innova", "Vehicles", 5),
+            ("Projector Unit", "Electronics", 8),
+        ]
+        for name, cat_name, qty in items:
+            cat = by_name.get(cat_name) or cats[0]
+            ResourceAsset.objects.create(
+                name=name,
+                category=cat,
+                total_quantity=qty,
+                created_by=created_by,
             )
