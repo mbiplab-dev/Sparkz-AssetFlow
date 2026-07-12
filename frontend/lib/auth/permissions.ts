@@ -62,6 +62,7 @@ const ROLE_CAPS: Record<UserRole, ReadonlySet<Capability>> = {
     "bookings.create",
     "maintenance.raise",
     "maintenance.approve",
+    "audit.manage",
     "reports.view",
   ]),
   department_head: new Set<Capability>([
