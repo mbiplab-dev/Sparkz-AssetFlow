@@ -33,6 +33,14 @@ export type SignupOtpRequestInput = {
   password: string;
 };
 
+/** Payload for direct registration (no OTP step). */
+export type RegisterInput = {
+  full_name: string;
+  email: string;
+  phone: string;
+  password: string;
+};
+
 export type OtpVerifyInput = {
   email: string;
   code: string;
@@ -40,6 +48,19 @@ export type OtpVerifyInput = {
 
 export async function login(input: LoginInput): Promise<AuthSession> {
   const session = (await request("/api/auth/login/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as AuthSession;
+  setAccessToken(session.access);
+  return session;
+}
+
+/**
+ * Direct signup — creates the employee account and logs them in immediately.
+ * Backend: POST /api/auth/register/ → { access, user } + refresh cookie.
+ */
+export async function register(input: RegisterInput): Promise<AuthSession> {
+  const session = (await request("/api/auth/register/", {
     method: "POST",
     body: JSON.stringify(input),
   })) as AuthSession;
