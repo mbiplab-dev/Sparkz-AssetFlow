@@ -8,23 +8,43 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     """Public-facing representation of a user, used in login/register/me responses."""
 
+    department_name = serializers.CharField(source="department.name", read_only=True)
+
     class Meta:
         model = User
-        fields = ("id", "email", "name", "age")
+        fields = (
+            "id",
+            "email",
+            "full_name",
+            "phone",
+            "role",
+            "status",
+            "department",
+            "department_name",
+        )
         read_only_fields = fields
 
 
 class SignupOTPRequestSerializer(serializers.Serializer):
-    """Validates signup details before an OTP is issued. Does not create a user."""
+    """Validates signup details before an OTP is issued. Does not create a user.
 
+    Only three fields are accepted at signup — role is never selectable and
+    defaults to 'employee'. Admin promotes users via the organization APIs.
+    """
+
+    full_name = serializers.CharField(max_length=150, min_length=2)
     email = serializers.EmailField()
-    name = serializers.CharField(max_length=150)
-    age = serializers.IntegerField(min_value=1)
     password = serializers.CharField(write_only=True, validators=[validate_password])
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+    def validate_full_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Full name is required.")
         return value
 
 
