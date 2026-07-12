@@ -5,11 +5,14 @@ __pycache__/
 .venv/
 db.sqlite3
 db.sqlite3-journal
-.env*
+.env
+.env.*
 !.env.example
 staticfiles/
 media/
 schema.yml
+.ruff_cache/
+.pytest_cache/
 
 # Node / Next
 node_modules/
@@ -17,19 +20,19 @@ node_modules/
 out/
 .turbo/
 .vercel/
-next-env.d.ts
+# next-env.d.ts is generated; keep out of commits if dirty
+*.tsbuildinfo
 
 # OS / editor
 .DS_Store
 .idea/
 .vscode/
 *.log
+logs/*.log
 
-*.md
-*.txt
-!README.md
-AssetFlow problem statement.md
-
-# Claude / AI agent local files
+# Local / AI agent clutter
 .claude/
-# Docker volumes
+.grok/
+
+# One-off problem brief (if present)
+AssetFlow problem statement.md

@@ -57,9 +57,7 @@ class AuditCycleSerializer(serializers.ModelSerializer):
 
     def get_auditors(self, obj):
         # Prefetch when list/retrieve uses prefetch_related("auditors").
-        return [
-            {"id": u.id, "full_name": u.full_name or u.email} for u in obj.auditors.all()
-        ]
+        return [{"id": u.id, "full_name": u.full_name or u.email} for u in obj.auditors.all()]
 
 
 def _active_employee_qs():

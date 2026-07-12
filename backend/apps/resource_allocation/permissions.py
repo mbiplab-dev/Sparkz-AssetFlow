@@ -9,9 +9,7 @@ class IsAssetManager(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(
-            user
-            and user.is_authenticated
-            and user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER)
+            user and user.is_authenticated and user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER)
         )
 
 
@@ -23,8 +21,7 @@ class IsAssetManagerOrDepartmentHead(BasePermission):
         return bool(
             user
             and user.is_authenticated
-            and user.role
-            in (UserRole.ADMIN, UserRole.ASSET_MANAGER, UserRole.DEPARTMENT_HEAD)
+            and user.role in (UserRole.ADMIN, UserRole.ASSET_MANAGER, UserRole.DEPARTMENT_HEAD)
         )
 
 
@@ -36,6 +33,5 @@ class IsDepartmentHeadOrEmployee(BasePermission):
         return bool(
             user
             and user.is_authenticated
-            and user.role
-            in (UserRole.ADMIN, UserRole.DEPARTMENT_HEAD, UserRole.EMPLOYEE)
+            and user.role in (UserRole.ADMIN, UserRole.DEPARTMENT_HEAD, UserRole.EMPLOYEE)
         )

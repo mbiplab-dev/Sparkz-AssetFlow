@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.assets.models import Asset, AssetStatus
+from apps.assets.models import AssetStatus
 from apps.authentication.models import User, UserRole
 
 from .models import MaintenanceRequest, MaintenanceStatus
@@ -108,9 +108,7 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
             estimated_cost=data.get("estimated_cost"),
             raised_by=request.user,
         )
-        return Response(
-            MaintenanceRequestSerializer(req).data, status=http_status.HTTP_201_CREATED
-        )
+        return Response(MaintenanceRequestSerializer(req).data, status=http_status.HTTP_201_CREATED)
 
     def _ensure_source_status(self, req: MaintenanceRequest, action_name: str) -> Response | None:
         allowed = ALLOWED_SOURCE[action_name]
@@ -143,9 +141,7 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
             req.status = MaintenanceStatus.APPROVED
             req.approved_by = request.user
             req.approved_at = timezone.now()
-            req.save(
-                update_fields=["status", "approved_by", "approved_at", "updated_at"]
-            )
+            req.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
             # Flip the asset to under_maintenance.
             asset = req.asset
             if asset.status != AssetStatus.UNDER_MAINTENANCE:

@@ -65,9 +65,7 @@ class AssetViewSet(viewsets.ModelViewSet):
             elif role == UserRole.EMPLOYEE:
                 # Bookable shared resources + any asset assigned to their department.
                 qs = qs.filter(
-                    Q(is_bookable=True)
-                    | Q(department_id=user.department_id)
-                    | Q(created_by=user)
+                    Q(is_bookable=True) | Q(department_id=user.department_id) | Q(created_by=user)
                 )
             else:
                 qs = qs.none()

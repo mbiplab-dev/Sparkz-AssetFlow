@@ -146,9 +146,7 @@ class AuditCycleViewSet(viewsets.ModelViewSet):
 class AuditItemViewSet(viewsets.ReadOnlyModelViewSet):
     """Per-asset rows within a cycle. Any authenticated user may read; verdict is gated per-item."""
 
-    queryset = AuditItem.objects.select_related(
-        "cycle", "asset", "asset__location", "verified_by"
-    )
+    queryset = AuditItem.objects.select_related("cycle", "asset", "asset__location", "verified_by")
     serializer_class = AuditItemSerializer
 
     def get_queryset(self):

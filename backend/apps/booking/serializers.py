@@ -67,16 +67,12 @@ class BookingCreateSerializer(serializers.Serializer):
 
     def validate_asset(self, asset: Asset) -> Asset:
         if not asset.is_bookable:
-            raise serializers.ValidationError(
-                "This asset is not marked as bookable."
-            )
+            raise serializers.ValidationError("This asset is not marked as bookable.")
         return asset
 
     def validate(self, attrs):
         if attrs["ends_at"] <= attrs["starts_at"]:
-            raise serializers.ValidationError(
-                {"ends_at": "End time must be after the start time."}
-            )
+            raise serializers.ValidationError({"ends_at": "End time must be after the start time."})
         return attrs
 
 

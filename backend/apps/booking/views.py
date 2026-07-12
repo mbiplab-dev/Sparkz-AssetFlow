@@ -63,9 +63,7 @@ class BookingViewSet(viewsets.ModelViewSet):
       constraint; the view catches the ``IntegrityError`` and returns 400.
     """
 
-    queryset = Booking.objects.select_related(
-        "asset", "asset__category", "booked_by", "department"
-    )
+    queryset = Booking.objects.select_related("asset", "asset__category", "booked_by", "department")
     serializer_class = BookingSerializer
     permission_classes = [BookingPermission]
 
@@ -123,8 +121,8 @@ class BookingViewSet(viewsets.ModelViewSet):
                             "This time slot overlaps an existing booking for the asset."
                         ]
                     }
-                )
-            raise ValidationError({"non_field_errors": [str(exc)]})
+                ) from exc
+            raise ValidationError({"non_field_errors": [str(exc)]}) from exc
 
         return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 

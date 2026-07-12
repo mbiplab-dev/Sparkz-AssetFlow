@@ -114,9 +114,7 @@ class DashboardSummaryView(APIView):
                         "message": log.message or str(log),
                         "timestamp": log.created_at,
                     }
-                    for log in ActivityLog.objects.filter(actor=user).order_by(
-                        "-created_at"
-                    )[:10]
+                    for log in ActivityLog.objects.filter(actor=user).order_by("-created_at")[:10]
                 ]
             return Response({"kpis": kpis, "recent_activity": recent_activity})
 
@@ -222,18 +220,14 @@ class DashboardReportsView(APIView):
             assets_by_category = [
                 {"category": row["category__name"] or "Uncategorized", "count": row["n"]}
                 for row in (
-                    Asset.objects.values("category__name")
-                    .annotate(n=Count("id"))
-                    .order_by("-n")
+                    Asset.objects.values("category__name").annotate(n=Count("id")).order_by("-n")
                 )
             ]
 
             assets_by_department = [
                 {"department": row["department__name"] or "Unassigned", "count": row["n"]}
                 for row in (
-                    Asset.objects.values("department__name")
-                    .annotate(n=Count("id"))
-                    .order_by("-n")
+                    Asset.objects.values("department__name").annotate(n=Count("id")).order_by("-n")
                 )
                 if row["n"] > 0
             ]
@@ -263,9 +257,7 @@ class DashboardReportsView(APIView):
             ]
 
             top_rows = (
-                MaintenanceRequest.objects.values(
-                    "asset__id", "asset__asset_tag", "asset__name"
-                )
+                MaintenanceRequest.objects.values("asset__id", "asset__asset_tag", "asset__name")
                 .annotate(n=Count("id"))
                 .order_by("-n")[:8]
             )
@@ -304,9 +296,7 @@ class DashboardReportsView(APIView):
         Holding = _model("resource_allocation", "Holding")
         if Holding is not None:
             totals["holdings_out"] = (
-                Holding.objects.exclude(holder_type="manager")
-                .filter(quantity__gt=0)
-                .count()
+                Holding.objects.exclude(holder_type="manager").filter(quantity__gt=0).count()
             )
             pool = (
                 Holding.objects.filter(holder_type="manager", quantity__gt=0).aggregate(
@@ -378,10 +368,8 @@ class DashboardNotificationsView(APIView):
 
         MaintenanceRequest = _model("maintenance", "MaintenanceRequest")
         if MaintenanceRequest is not None:
-            for mr in (
-                MaintenanceRequest.objects.select_related("asset", "raised_by").filter(
-                    created_at__gte=since
-                )
+            for mr in MaintenanceRequest.objects.select_related("asset", "raised_by").filter(
+                created_at__gte=since
             ):
                 items.append(
                     {
@@ -396,10 +384,8 @@ class DashboardNotificationsView(APIView):
                     }
                 )
 
-            for mr in (
-                MaintenanceRequest.objects.select_related("asset", "approved_by").filter(
-                    approved_at__isnull=False, approved_at__gte=since
-                )
+            for mr in MaintenanceRequest.objects.select_related("asset", "approved_by").filter(
+                approved_at__isnull=False, approved_at__gte=since
             ):
                 items.append(
                     {
@@ -414,10 +400,8 @@ class DashboardNotificationsView(APIView):
                     }
                 )
 
-            for mr in (
-                MaintenanceRequest.objects.select_related("asset", "technician").filter(
-                    resolved_at__isnull=False, resolved_at__gte=since
-                )
+            for mr in MaintenanceRequest.objects.select_related("asset", "technician").filter(
+                resolved_at__isnull=False, resolved_at__gte=since
             ):
                 items.append(
                     {
@@ -434,10 +418,8 @@ class DashboardNotificationsView(APIView):
 
         Booking = _model("booking", "Booking")
         if Booking is not None:
-            for b in (
-                Booking.objects.select_related("asset", "booked_by").filter(
-                    created_at__gte=since
-                )
+            for b in Booking.objects.select_related("asset", "booked_by").filter(
+                created_at__gte=since
             ):
                 items.append(
                     {
@@ -452,10 +434,8 @@ class DashboardNotificationsView(APIView):
                     }
                 )
 
-            for b in (
-                Booking.objects.select_related("asset", "cancelled_by").filter(
-                    cancelled_at__isnull=False, cancelled_at__gte=since
-                )
+            for b in Booking.objects.select_related("asset", "cancelled_by").filter(
+                cancelled_at__isnull=False, cancelled_at__gte=since
             ):
                 items.append(
                     {
@@ -472,10 +452,8 @@ class DashboardNotificationsView(APIView):
 
         Transfer = _model("resource_allocation", "Transfer")
         if Transfer is not None:
-            for t in (
-                Transfer.objects.select_related("asset", "performed_by").filter(
-                    kind="allocate", created_at__gte=since
-                )
+            for t in Transfer.objects.select_related("asset", "performed_by").filter(
+                kind="allocate", created_at__gte=since
             ):
                 items.append(
                     {
@@ -483,8 +461,7 @@ class DashboardNotificationsView(APIView):
                         "kind": "asset_allocated",
                         "title": "Asset allocated",
                         "body": _truncate(
-                            f"{t.quantity} × {t.asset} → "
-                            f"{t.to_holder_type}:{t.to_holder_id}"
+                            f"{t.quantity} × {t.asset} → {t.to_holder_type}:{t.to_holder_id}"
                         ),
                         "entity": "transfer",
                         "entity_id": t.pk,
@@ -496,9 +473,9 @@ class DashboardNotificationsView(APIView):
         # Activity log rows for a fuller feed.
         ActivityLog = _model("activity", "ActivityLog")
         if ActivityLog is not None:
-            for log in ActivityLog.objects.select_related("actor").filter(
-                created_at__gte=since
-            )[:30]:
+            for log in ActivityLog.objects.select_related("actor").filter(created_at__gte=since)[
+                :30
+            ]:
                 items.append(
                     {
                         "id": f"activity-{log.pk}",

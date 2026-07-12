@@ -86,15 +86,15 @@ class AssetCreateSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=200)
     category = serializers.PrimaryKeyRelatedField(queryset=AssetCategory.objects.all())
-    serial_number = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+    serial_number = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, default=""
+    )
     qr_code = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     acquisition_date = serializers.DateField(required=False, allow_null=True)
     acquisition_cost = serializers.DecimalField(
         max_digits=12, decimal_places=2, required=False, allow_null=True
     )
-    condition = serializers.ChoiceField(
-        choices=AssetCondition.choices, default=AssetCondition.GOOD
-    )
+    condition = serializers.ChoiceField(choices=AssetCondition.choices, default=AssetCondition.GOOD)
     location = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), required=False, allow_null=True
     )

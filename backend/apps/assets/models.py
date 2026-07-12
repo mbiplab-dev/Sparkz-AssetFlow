@@ -41,15 +41,11 @@ class Asset(models.Model):
 
     asset_tag = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=200)
-    category = models.ForeignKey(
-        AssetCategory, on_delete=models.PROTECT, related_name="assets"
-    )
+    category = models.ForeignKey(AssetCategory, on_delete=models.PROTECT, related_name="assets")
     serial_number = models.CharField(max_length=200, blank=True, default="")
     qr_code = models.CharField(max_length=200, blank=True, default="")
     acquisition_date = models.DateField(null=True, blank=True)
-    acquisition_cost = models.DecimalField(
-        max_digits=12, decimal_places=2, null=True, blank=True
-    )
+    acquisition_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     condition = models.CharField(
         max_length=16, choices=AssetCondition.choices, default=AssetCondition.GOOD
     )

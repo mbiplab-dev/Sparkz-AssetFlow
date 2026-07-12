@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import DateTimeRangeField
 from django.db import models
-from django.db.models.expressions import Func, F
+from django.db.models.expressions import F, Func
 
 from apps.assets.models import Asset
 from apps.organization.models import Department

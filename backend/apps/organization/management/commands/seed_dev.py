@@ -16,6 +16,7 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 from faker import Faker
 
 from apps.assets.models import Asset, AssetCondition, AssetStatus, Location
@@ -26,8 +27,6 @@ from apps.organization.models import AssetCategory, Department
 from apps.resource_allocation.models import Asset as ResourceAsset
 from apps.resource_allocation.services import allocate as ra_allocate
 from apps.resource_allocation.services import register_asset as ra_register
-from django.utils import timezone
-
 
 DEPARTMENTS = [
     ("Engineering", "ENG"),
@@ -57,10 +56,16 @@ LOCATIONS = [
 ]
 
 CATEGORY_ASSET_NAMES = {
-    "Electronics": ["Projector", "Monitor 27\"", "Wireless Keyboard", "Webcam Pro", "Docking Station"],
+    "Electronics": [
+        "Projector",
+        'Monitor 27"',
+        "Wireless Keyboard",
+        "Webcam Pro",
+        "Docking Station",
+    ],
     "Furniture": ["Ergonomic Chair", "Standing Desk", "Filing Cabinet", "Bookshelf", "Whiteboard"],
     "Vehicles": ["Tata Ace", "Bolero", "Innova Crysta", "E-Rickshaw", "Mahindra XUV"],
-    "IT Equipment": ["MacBook Pro 14\"", "ThinkPad X1", "iPhone 15", "iPad Air", "USB-C Hub"],
+    "IT Equipment": ['MacBook Pro 14"', "ThinkPad X1", "iPhone 15", "iPad Air", "USB-C Hub"],
     "Office Supplies": ["Coffee Machine", "Water Dispenser", "Paper Shredder", "Printer HP"],
     "Meeting Rooms": ["Boardroom", "Focus Room 1", "Focus Room 2", "Training Hall"],
 }
@@ -134,6 +139,7 @@ class Command(BaseCommand):
             Holding,
             Transfer,
         )
+
         Transfer.objects.all().delete()
         AllocationRequest.objects.all().delete()
         Holding.objects.all().delete()
@@ -268,7 +274,12 @@ class Command(BaseCommand):
             AssetStatus.UNDER_MAINTENANCE,
             AssetStatus.RESERVED,
         ]
-        conditions = [AssetCondition.NEW, AssetCondition.GOOD, AssetCondition.GOOD, AssetCondition.FAIR]
+        conditions = [
+            AssetCondition.NEW,
+            AssetCondition.GOOD,
+            AssetCondition.GOOD,
+            AssetCondition.FAIR,
+        ]
 
         existing = Asset.objects.count()
         if existing >= n:
@@ -306,9 +317,9 @@ class Command(BaseCommand):
             return
         by_name = {c.name: c for c in cats}
         items = [
-            ("MacBook Pro 14\"", "IT Equipment", 25),
+            ('MacBook Pro 14"', "IT Equipment", 25),
             ("ThinkPad X1", "IT Equipment", 30),
-            ("Dell Monitor 27\"", "Electronics", 40),
+            ('Dell Monitor 27"', "Electronics", 40),
             ("USB-C Hub", "Electronics", 60),
             ("Ergonomic Chair", "Furniture", 50),
             ("Standing Desk", "Furniture", 20),
@@ -329,9 +340,7 @@ class Command(BaseCommand):
                 created_by=created_by,
             )
 
-    def _seed_holdings(
-        self, manager: User | None, depts: list[Department], employees: list[User]
-    ):
+    def _seed_holdings(self, manager: User | None, depts: list[Department], employees: list[User]):
         """Allocate a few resource-catalog items to employees + departments."""
         from apps.resource_allocation.models import Holding
 
@@ -403,7 +412,13 @@ class Command(BaseCommand):
         # 1 pending, 1 approved, 1 in_progress, 1 resolved
         specs = [
             (MaintenanceStatus.PENDING, MaintenancePriority.LOW, None, None, None),
-            (MaintenanceStatus.APPROVED, MaintenancePriority.HIGH, manager, "TechCare Services", None),
+            (
+                MaintenanceStatus.APPROVED,
+                MaintenancePriority.HIGH,
+                manager,
+                "TechCare Services",
+                None,
+            ),
             (
                 MaintenanceStatus.IN_PROGRESS,
                 MaintenancePriority.MEDIUM,
@@ -419,7 +434,9 @@ class Command(BaseCommand):
                 "Display cable reseated. Working normally.",
             ),
         ]
-        for asset, (status, priority, approver, tech_name, resolution) in zip(assets, specs):
+        for asset, (status, priority, approver, tech_name, resolution) in zip(
+            assets, specs, strict=False
+        ):
             raiser = random.choice(employees)
             req = MaintenanceRequest(
                 asset=asset,
@@ -475,8 +492,8 @@ class Command(BaseCommand):
         employees: list[User],
     ):
         """Open audit cycle assigned to demo employee1 for employee login testing."""
-        from apps.audits.models import AuditCycle
         from apps.audits import services as audit_services
+        from apps.audits.models import AuditCycle
 
         if AuditCycle.objects.exists():
             return
