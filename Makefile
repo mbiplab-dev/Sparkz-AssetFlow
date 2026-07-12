@@ -7,7 +7,9 @@
 # ---- config ----------------------------------------------------------------
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
-DB_URL := postgres://hackathon:hackathon@localhost:5432/hackathon
+POSTGRES_USER := app
+POSTGRES_DB := app
+DB_URL := postgres://app:app@localhost:5432/app
 
 # ---- help ------------------------------------------------------------------
 help:
@@ -15,10 +17,10 @@ help:
 	@echo "  run              Run backend + frontend concurrently"
 	@echo "  run-backend      Run Django dev server (port 8000)"
 	@echo "  run-frontend     Run Next.js dev server (port 3000)"
-	@echo "  db               Start postgres in docker (prints DATABASE_URL)"
-	@echo "  db-down          Stop the postgres container"
-	@echo "  db-logs          Tail postgres logs"
-	@echo "  init-db          Migrate + seed fake data"
+	@echo "  db               Start postgres + redis in docker (prints DATABASE_URL)"
+	@echo "  db-down          Stop the postgres + redis containers"
+	@echo "  db-logs          Tail postgres + redis logs"
+	@echo "  init-db          Wait for postgres, then migrate"
 	@echo "  migrate          Run Django migrations"
 	@echo "  install          Install backend + frontend dependencies"
 	@echo "  format           Format backend + frontend"
@@ -43,15 +45,15 @@ run-frontend:
 
 # ---- db --------------------------------------------------------------------
 db:
-	docker compose up -d db
+	docker compose up -d db redis
 	@echo ""
-	@echo "Postgres is up. DATABASE_URL=$(DB_URL)"
+	@echo "Postgres + Redis are up. DATABASE_URL=$(DB_URL)"
 
 db-down:
 	docker compose down
 
 db-logs:
-	docker compose logs -f db
+	docker compose logs -f db redis
 
 # ---- init / migrate --------------------------------------------------------
 migrate:
@@ -59,9 +61,8 @@ migrate:
 
 init-db: db
 	@echo "Waiting for postgres to be healthy..."
-	@until docker compose exec -T db pg_isready -U hackathon -d hackathon >/dev/null 2>&1; do sleep 1; done
+	@until docker compose exec -T db pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB) >/dev/null 2>&1; do sleep 1; done
 	cd $(BACKEND_DIR) && uv run python manage.py migrate
-	cd $(BACKEND_DIR) && uv run python manage.py seed
 
 # ---- install ---------------------------------------------------------------
 install: install-backend install-frontend
@@ -76,7 +77,7 @@ install-frontend:
 format: format-backend format-frontend
 
 format-backend:
-	cd $(BACKEND_DIR) && uv run ruff format . && uv run ruff check --fix .
+	cd $(BACKEND_DIR) && uv run ruff check --fix . && uv run ruff format .
 
 format-frontend:
 	cd $(FRONTEND_DIR) && npm run format
