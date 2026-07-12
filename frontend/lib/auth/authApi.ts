@@ -2,14 +2,16 @@ import { authRequest } from "@/lib/api/client";
 import { request } from "@/lib/api/http";
 import { clearAccessToken, setAccessToken } from "./tokenStorage";
 
+export type UserRole = "admin" | "asset_manager" | "department_head" | "employee";
+
 /** Matches backend UserSerializer (`apps.authentication.serializers.UserSerializer`). */
 export type AuthUser = {
   id: number;
   email: string;
   full_name: string;
   phone: string;
-  role: string;
-  status: string;
+  role: UserRole;
+  status: "active" | "inactive";
   department: number | null;
   department_name: string | null;
 };
@@ -24,7 +26,14 @@ export type LoginInput = {
   password: string;
 };
 
-/** Payload for direct registration (no email/phone OTP on signup). */
+export type SignupOtpRequestInput = {
+  full_name: string;
+  email: string;
+  phone: string;
+  password: string;
+};
+
+/** Payload for direct registration (no OTP step). */
 export type RegisterInput = {
   full_name: string;
   email: string;
@@ -47,16 +56,29 @@ export async function login(input: LoginInput): Promise<AuthSession> {
 }
 
 /**
- * Create an employee account and log in.
- *
- * Expected: POST /api/auth/register/ → { access, user } + refresh cookie.
- * Backend currently only exposes OTP-gated signup routes
- * (`register/request-otp/`, `register/verify-otp/`). Product registration
- * has no OTP step — backend needs a direct register endpoint (or equivalent).
- * See FRONTEND_CHANGELOG.md.
+ * Direct signup — creates the employee account and logs them in immediately.
+ * Backend: POST /api/auth/register/ → { access, user } + refresh cookie.
  */
 export async function register(input: RegisterInput): Promise<AuthSession> {
   const session = (await request("/api/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as AuthSession;
+  setAccessToken(session.access);
+  return session;
+}
+
+/** Validates signup details and emails a verification code. Creates no user yet. */
+export async function requestSignupOtp(input: SignupOtpRequestInput): Promise<{ detail: string }> {
+  return (await request("/api/auth/register/request-otp/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as { detail: string };
+}
+
+/** Verifies the signup code, which creates the account and logs the user in. */
+export async function verifySignupOtp(input: OtpVerifyInput): Promise<AuthSession> {
+  const session = (await request("/api/auth/register/verify-otp/", {
     method: "POST",
     body: JSON.stringify(input),
   })) as AuthSession;
