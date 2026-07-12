@@ -64,10 +64,10 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
         )}
 
         <Link
-          href="/notifications"
+          href="/activity"
           className="group text-primary hover:bg-muted/70 mt-3 flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-colors"
         >
-          View all activity
+          View activity logs
           <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       </CardContent>

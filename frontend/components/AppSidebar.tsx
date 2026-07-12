@@ -9,6 +9,7 @@ import {
   Building2,
   CalendarClock,
   ClipboardCheck,
+  ClipboardList,
   LayoutDashboard,
   Package,
   Wrench,
@@ -21,7 +22,7 @@ type NavItem = {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
-  /** Optional capability required to see the item. Undefined ⇒ everyone. */
+  /** Optional capability required to see the item. Undefined ⇒ everyone authenticated. */
   capability?: Capability;
 };
 
@@ -33,12 +34,33 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Building2,
     capability: "org.manage",
   },
-  { href: "/assets", label: "Assets", icon: Package },
+  { href: "/assets", label: "Assets", icon: Package, capability: "assets.view" },
   { href: "/allocation", label: "Allocation & Transfer", icon: ArrowLeftRight },
-  { href: "/booking", label: "Resource Booking", icon: CalendarClock },
-  { href: "/maintenance", label: "Maintenance", icon: Wrench },
-  { href: "/audit", label: "Audit", icon: ClipboardCheck },
+  {
+    href: "/booking",
+    label: "Resource Booking",
+    icon: CalendarClock,
+    capability: "bookings.view",
+  },
+  {
+    href: "/maintenance",
+    label: "Maintenance",
+    icon: Wrench,
+    capability: "maintenance.view",
+  },
+  {
+    href: "/audit",
+    label: "Audit",
+    icon: ClipboardCheck,
+    capability: "audit.view",
+  },
   { href: "/reports", label: "Reports", icon: BarChart3, capability: "reports.view" },
+  {
+    href: "/activity",
+    label: "Activity Logs",
+    icon: ClipboardList,
+    capability: "activity.view",
+  },
   { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -66,7 +88,7 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const items = NAV_ITEMS.filter((item) => !item.capability || can(user, item.capability));
 
   return (
-    <nav className="flex flex-1 flex-col gap-0.5 overflow-hidden px-3 py-2">
+    <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-2">
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (

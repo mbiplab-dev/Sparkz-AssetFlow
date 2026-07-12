@@ -14,11 +14,12 @@ from datetime import date
 from django.apps import apps as django_apps
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.activity.permissions import CanExportData
 
-def _csv_response(filename_stem: str) -> tuple[HttpResponse, "csv._writer"]:
+
+def _csv_response(filename_stem: str) -> tuple[HttpResponse, csv._writer]:
     """Create an HttpResponse pre-configured for a CSV attachment + a writer."""
     filename = f"assetflow-{filename_stem}-{date.today().isoformat()}.csv"
     response = HttpResponse(content_type="text/csv")
@@ -44,7 +45,7 @@ def _fmt(value) -> str:
 
 
 class ExportDepartmentsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],
@@ -81,7 +82,7 @@ class ExportDepartmentsView(APIView):
 
 
 class ExportCategoriesView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],
@@ -105,7 +106,7 @@ class ExportCategoriesView(APIView):
 
 
 class ExportEmployeesView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],
@@ -142,7 +143,7 @@ class ExportEmployeesView(APIView):
 
 
 class ExportAssetsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],
@@ -202,7 +203,7 @@ def _holder_name(holder_type: str, holder_id: int, dept_map: dict, user_map: dic
 
 
 class ExportHoldingsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],
@@ -255,7 +256,7 @@ class ExportHoldingsView(APIView):
 
 
 class ExportBookingsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],
@@ -311,7 +312,7 @@ class ExportBookingsView(APIView):
 
 
 class ExportMaintenanceView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanExportData]
 
     @extend_schema(
         tags=["Dashboard / Exports"],

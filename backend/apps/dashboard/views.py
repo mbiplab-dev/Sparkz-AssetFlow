@@ -61,33 +61,31 @@ class DashboardSummaryView(APIView):
                 updated_at__date=today,
             ).count()
 
-        Booking = _model("bookings", "Booking")
+        Booking = _model("booking", "Booking")
         if Booking is not None:
             kpis["active_bookings"] = Booking.objects.filter(
-                start_time__lte=now, end_time__gte=now, status="confirmed"
+                starts_at__lte=now,
+                ends_at__gte=now,
+                status__in=("upcoming", "ongoing"),
             ).count()
 
-        TransferRequest = _model("allocations", "TransferRequest")
-        if TransferRequest is not None:
-            kpis["pending_transfers"] = TransferRequest.objects.filter(status="pending").count()
-
-        Allocation = _model("allocations", "Allocation")
-        if Allocation is not None:
-            open_allocations = Allocation.objects.filter(
-                returned_at__isnull=True, expected_return_date__isnull=False
-            )
-            kpis["upcoming_returns"] = open_allocations.filter(
-                expected_return_date__gte=today
-            ).count()
-            kpis["overdue_returns"] = open_allocations.filter(
-                expected_return_date__lt=today
+        # Open allocation requests stand in for "pending transfers" in the
+        # quantity-ledger model (resource_allocation).
+        AllocationRequest = _model("resource_allocation", "AllocationRequest")
+        if AllocationRequest is not None:
+            kpis["pending_transfers"] = AllocationRequest.objects.filter(
+                status__in=("open", "partially_fulfilled")
             ).count()
 
         recent_activity = []
         ActivityLog = _model("activity", "ActivityLog")
         if ActivityLog is not None:
             recent_activity = [
-                {"id": log.id, "message": str(log), "timestamp": log.created_at}
+                {
+                    "id": log.id,
+                    "message": log.message or str(log),
+                    "timestamp": log.created_at,
+                }
                 for log in ActivityLog.objects.order_by("-created_at")[:10]
             ]
 
@@ -186,12 +184,14 @@ class DashboardReportsView(APIView):
                 {"hour": h, "count": int(hour_counts.get(h, 0))} for h in range(24)
             ]
 
-        Allocation = _model("allocations", "Allocation")
-        if Allocation is not None:
-            overdue_returns_count = Allocation.objects.filter(
-                returned_at__isnull=True,
-                expected_return_date__isnull=False,
-                expected_return_date__lt=today,
+        # Overdue returns: not modeled as due-dates on Holding yet.
+        # Surface open allocation requests older than 7 days as a soft proxy.
+        AllocationRequest = _model("resource_allocation", "AllocationRequest")
+        if AllocationRequest is not None:
+            week_ago = today - timedelta(days=7)
+            overdue_returns_count = AllocationRequest.objects.filter(
+                status__in=("open", "partially_fulfilled"),
+                created_at__date__lt=week_ago,
             ).count()
 
         return Response(

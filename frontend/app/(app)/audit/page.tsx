@@ -52,6 +52,7 @@ import {
   type AuditVerdict,
 } from "@/lib/api/audits";
 import { useCan } from "@/lib/auth/permissions";
+import { RoleGate } from "@/components/rbac/RoleGate";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { cn } from "@/lib/utils";
 
@@ -174,6 +175,11 @@ export default function AuditPage() {
   }
 
   return (
+    <RoleGate
+      capability="audit.view"
+      title="You don't have access to Audits"
+      description="Audit cycles are available to administrators and asset managers."
+    >
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -410,6 +416,7 @@ export default function AuditPage() {
         onClose={handleClose}
       />
     </div>
+    </RoleGate>
   );
 }
 

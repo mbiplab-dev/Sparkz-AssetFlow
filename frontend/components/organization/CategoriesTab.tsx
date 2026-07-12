@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, LayoutGrid, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { LayoutGrid, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { downloadCsv } from "@/lib/api/exports";
+import { ExportButton } from "@/components/ExportButton";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
@@ -143,15 +143,7 @@ export function CategoriesTab() {
           </Select>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadCsv("categories")}
-            className="w-full sm:w-auto"
-          >
-            <Download />
-            Export CSV
-          </Button>
+          <ExportButton resource="categories" className="w-full sm:w-auto" />
           <Button onClick={openCreate} className="w-full shrink-0 rounded-full sm:w-auto">
             <Plus />
             Add Category

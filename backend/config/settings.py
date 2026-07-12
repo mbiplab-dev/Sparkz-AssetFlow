@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.resource_allocation",
     "apps.maintenance",
     "apps.booking",
+    "apps.activity",
 ]
 
 MIDDLEWARE = [
@@ -167,7 +168,50 @@ SPECTACULAR_SETTINGS = {
             "name": "Maintenance",
             "description": "Maintenance request workflow: pending → approved/rejected → in progress → resolved (Screen 6).",
         },
+        {
+            "name": "Activity",
+            "description": "Persistent audit trail of user and domain actions.",
+        },
+        {
+            "name": "Dashboard / Exports",
+            "description": "CSV downloads for operational datasets.",
+        },
     ],
+}
+
+# ---------------------------------------------------------------------------
+# Logging — mirror activity events to backend/logs/activity.log
+# ---------------------------------------------------------------------------
+
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "activity": {
+            "format": "%(asctime)s %(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+        },
+    },
+    "handlers": {
+        "activity_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "activity.log"),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "activity",
+        },
+    },
+    "loggers": {
+        "assetflow.activity": {
+            "handlers": ["activity_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
 }
 
 

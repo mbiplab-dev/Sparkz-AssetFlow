@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Plus, Wrench } from "lucide-react";
+import { Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { DiagnoseDialog } from "@/components/maintenance/DiagnoseDialog";
@@ -22,7 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCan } from "@/lib/auth/permissions";
 import { listAssets, type Asset } from "@/lib/api/assets";
-import { downloadCsv } from "@/lib/api/exports";
+import { ExportButton } from "@/components/ExportButton";
 import {
   approveMaintenance,
   listMaintenanceRequests,
@@ -54,7 +54,7 @@ export default function MaintenancePage() {
     data: requests,
     loading,
     reload,
-  } = useAsyncList<MaintenanceRequest>(
+  } = useAsyncList<MaintenanceRequest[]>(
     () =>
       listMaintenanceRequests({
         asset: assetFilter || undefined,
@@ -65,7 +65,7 @@ export default function MaintenancePage() {
     [assetFilter, priorityFilter, from, to],
   );
 
-  const { data: assets } = useAsyncList<Asset>(() => listAssets(), []);
+  const { data: assets } = useAsyncList<Asset[]>(() => listAssets(), []);
 
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [diagnoseFor, setDiagnoseFor] = useState<MaintenanceRequest | null>(null);
@@ -146,14 +146,7 @@ export default function MaintenancePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadCsv("maintenance")}
-          >
-            <Download />
-            Export CSV
-          </Button>
+          <ExportButton resource="maintenance" />
           {canRaise ? (
             <Button onClick={() => setRaiseOpen(true)} className="rounded-full">
               <Plus />

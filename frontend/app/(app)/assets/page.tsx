@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
+import { MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useCan } from "@/lib/auth/permissions";
-import { downloadCsv } from "@/lib/api/exports";
+import { ExportButton } from "@/components/ExportButton";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
@@ -211,15 +211,7 @@ export default function AssetsPage() {
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadCsv("assets")}
-            className="w-full sm:w-auto"
-          >
-            <Download />
-            Export CSV
-          </Button>
+          <ExportButton resource="assets" className="w-full sm:w-auto" />
           {canRegister && (
             <Button onClick={openRegister} className="w-full shrink-0 rounded-full sm:w-auto">
               <PackagePlus />

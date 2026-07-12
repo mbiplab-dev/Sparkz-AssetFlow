@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeftRight, Download, MoreHorizontal, Package, Plus, RotateCcw, Search } from "lucide-react";
+import { ArrowLeftRight, MoreHorizontal, Package, Plus, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ import {
   type ResourceAsset,
   type Transfer,
 } from "@/lib/api/allocation";
-import { downloadCsv } from "@/lib/api/exports";
+import { ExportButton } from "@/components/ExportButton";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { listDepartments, listEmployees, type Department, type Employee } from "@/lib/api/organization";
@@ -124,10 +124,10 @@ export default function AllocationPage() {
   // for pending transfer and return requests, gate those controls on
   // `useCan("transfers.approve")` / `useCan("returns.approve")`. Right now the
   // page only surfaces holdings + a manager-driven initiate flow.
-  // Non-managers can raise allocation *requests* (initiate) — asset managers
-  // and admins get the direct-allocate path; the backend rejects mismatches.
-  const canRequestAllocation =
-    user?.role === "department_head" || user?.role === "employee";
+  // Department heads raise allocation *requests* for their team; asset managers
+  // / admins allocate directly from the manager pool. Employees only initiate
+  // returns/transfers — they do not allocate.
+  const canRequestAllocation = user?.role === "department_head";
   const [search, setSearch] = useState("");
   const { data, loading, setData, reload } = useAsyncList<Bundle>(
     () =>
@@ -360,14 +360,7 @@ export default function AllocationPage() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadCsv("holdings")}
-          >
-            <Download />
-            Export CSV
-          </Button>
+          <ExportButton resource="holdings" />
           {showAllocateButton && (
             <Button onClick={openAllocate} className="rounded-full">
               <Plus />

@@ -11,7 +11,7 @@ import {
   parseISO,
   startOfWeek,
 } from "date-fns";
-import { CalendarClock, ChevronLeft, ChevronRight, Download, MapPin, Plus, Tag } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, MapPin, Plus, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import {
   listBookings,
   type Booking,
 } from "@/lib/api/booking";
-import { downloadCsv } from "@/lib/api/exports";
+import { ExportButton } from "@/components/ExportButton";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 
 const HOURS = Array.from({ length: 13 }, (_, i) => 8 + i); // 8..20
@@ -56,7 +56,7 @@ export default function BookingPage() {
   );
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
 
-  const { data: assets, loading: assetsLoading } = useAsyncList<Asset>(
+  const { data: assets, loading: assetsLoading } = useAsyncList<Asset[]>(
     () => listAssets({ is_bookable: "true" }),
     [],
   );
@@ -73,7 +73,7 @@ export default function BookingPage() {
     data: bookings,
     loading: bookingsLoading,
     reload,
-  } = useAsyncList<Booking>(
+  } = useAsyncList<Booking[]>(
     () =>
       selected
         ? listBookings({
@@ -117,14 +117,7 @@ export default function BookingPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadCsv("bookings")}
-          >
-            <Download />
-            Export CSV
-          </Button>
+          <ExportButton resource="bookings" />
           {canBook ? (
             <Button
               onClick={() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, MoreHorizontal, Pencil, Search, Users } from "lucide-react";
+import { MoreHorizontal, Pencil, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { downloadCsv } from "@/lib/api/exports";
+import { ExportButton } from "@/components/ExportButton";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
@@ -196,15 +196,10 @@ export function EmployeesTab() {
             <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadCsv("employees")}
+        <ExportButton
+          resource="employees"
           className="w-full sm:col-span-2 lg:col-span-1 lg:ml-auto lg:w-auto"
-        >
-          <Download />
-          Export CSV
-        </Button>
+        />
       </div>
 
       <Card>
