@@ -1,0 +1,166 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.response import Response
+
+from apps.authentication.models import UserRole
+
+from . import services
+from .models import AuditCycle, AuditItem, Discrepancy
+from .serializers import (
+    AuditCycleCreateSerializer,
+    AuditCycleSerializer,
+    AuditItemSerializer,
+    AuditItemVerdictSerializer,
+    DiscrepancySerializer,
+)
+
+
+class IsAdminOrAssetManager(BasePermission):
+    """Read for all authenticated; write for admin + asset_manager."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return True
+        return getattr(user, "role", None) in (UserRole.ADMIN, UserRole.ASSET_MANAGER)
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Audits / Cycles"], summary="List audit cycles"),
+    retrieve=extend_schema(tags=["Audits / Cycles"], summary="Get an audit cycle"),
+)
+class AuditCycleViewSet(viewsets.ModelViewSet):
+    """
+    Audit cycles (Screen 8). Read: any authenticated user. Create/close: admin + asset_manager.
+    Creating a cycle snapshots every in-scope asset as a pending AuditItem.
+    """
+
+    queryset = AuditCycle.objects.select_related("scope_department", "scope_location", "created_by")
+    serializer_class = AuditCycleSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrAssetManager]
+    http_method_names = ["get", "post", "head", "options"]
+
+    @extend_schema(
+        tags=["Audits / Cycles"],
+        summary="Create an audit cycle",
+        request=AuditCycleCreateSerializer,
+        responses=AuditCycleSerializer,
+    )
+    def create(self, request, *args, **kwargs):
+        serializer = AuditCycleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        cycle = services.create_cycle(
+            name=data["name"],
+            starts_on=data["starts_on"],
+            ends_on=data["ends_on"],
+            scope_department=data.get("scope_department"),
+            scope_location=data.get("scope_location"),
+            auditor_ids=[u.id for u in data.get("auditors", [])],
+            created_by=request.user,
+        )
+        return Response(AuditCycleSerializer(cycle).data, status=201)
+
+    @extend_schema(
+        tags=["Audits / Cycles"],
+        summary="Close an audit cycle",
+        request=None,
+        responses=AuditCycleSerializer,
+    )
+    @action(detail=True, methods=["post"])
+    def close(self, request, pk=None):
+        cycle = self.get_object()
+        try:
+            services.close_cycle(cycle=cycle, performed_by=request.user)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        cycle.refresh_from_db()
+        return Response(AuditCycleSerializer(cycle).data)
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Audits / Items"], summary="List audit items"),
+    retrieve=extend_schema(tags=["Audits / Items"], summary="Get an audit item"),
+)
+class AuditItemViewSet(viewsets.ReadOnlyModelViewSet):
+    """Per-asset rows within a cycle. Any authenticated user may read; verdict is gated per-item."""
+
+    queryset = AuditItem.objects.select_related("cycle", "asset", "verified_by")
+    serializer_class = AuditItemSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        cycle_id = self.request.query_params.get("cycle")
+        if cycle_id:
+            qs = qs.filter(cycle_id=cycle_id)
+        return qs
+
+    @extend_schema(
+        tags=["Audits / Items"],
+        summary="Set an item's verdict (assigned auditor, admin, or asset manager)",
+        request=AuditItemVerdictSerializer,
+        responses=AuditItemSerializer,
+    )
+    @action(detail=True, methods=["patch"])
+    def verdict(self, request, pk=None):
+        item = self.get_object()
+        user = request.user
+        is_privileged = getattr(user, "role", None) in (UserRole.ADMIN, UserRole.ASSET_MANAGER)
+        if not is_privileged and not item.cycle.auditors.filter(pk=user.pk).exists():
+            return Response(
+                {"detail": "Only an assigned auditor, admin, or asset manager can set a verdict."},
+                status=403,
+            )
+        if item.cycle.status != "open":
+            return Response({"detail": "This cycle is closed."}, status=400)
+
+        serializer = AuditItemVerdictSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.set_verdict(
+            item=item,
+            verdict=serializer.validated_data["verdict"],
+            performed_by=user,
+            notes=serializer.validated_data.get("notes", ""),
+        )
+        item.refresh_from_db()
+        return Response(AuditItemSerializer(item).data)
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Audits / Discrepancies"], summary="List discrepancies"),
+    retrieve=extend_schema(tags=["Audits / Discrepancies"], summary="Get a discrepancy"),
+)
+class DiscrepancyViewSet(viewsets.ReadOnlyModelViewSet):
+    """Auto-generated discrepancy report. Read: any authenticated user. Resolve: admin/asset_manager."""
+
+    queryset = Discrepancy.objects.select_related("audit_item__asset", "audit_item__cycle")
+    serializer_class = DiscrepancySerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        cycle_id = self.request.query_params.get("cycle")
+        resolved = self.request.query_params.get("resolved")
+        if cycle_id:
+            qs = qs.filter(audit_item__cycle_id=cycle_id)
+        if resolved in ("true", "false"):
+            qs = qs.filter(resolved=resolved == "true")
+        return qs
+
+    @extend_schema(
+        tags=["Audits / Discrepancies"],
+        summary="Mark a discrepancy resolved",
+        request=None,
+        responses=DiscrepancySerializer,
+    )
+    @action(
+        detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsAdminOrAssetManager]
+    )
+    def resolve(self, request, pk=None):
+        discrepancy = self.get_object()
+        services.resolve_discrepancy(discrepancy=discrepancy, performed_by=request.user)
+        discrepancy.refresh_from_db()
+        return Response(DiscrepancySerializer(discrepancy).data)
