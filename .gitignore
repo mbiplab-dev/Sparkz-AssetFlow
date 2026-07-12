@@ -1,0 +1,28 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+db.sqlite3
+db.sqlite3-journal
+.env
+staticfiles/
+media/
+
+# Node / Next
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+next-env.d.ts
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+*.md
+*.txt
+# Docker volumes
