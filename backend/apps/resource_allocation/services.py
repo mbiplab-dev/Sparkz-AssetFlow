@@ -1,7 +1,16 @@
 from django.db import transaction
 from django.db.models import F
 
-from .models import MANAGER_HOLDER_ID, Asset, HolderType, Holding, Transfer, TransferKind
+from .models import (
+    MANAGER_HOLDER_ID,
+    AllocationRequest,
+    Asset,
+    HolderType,
+    Holding,
+    RequestStatus,
+    Transfer,
+    TransferKind,
+)
 
 
 class InsufficientQuantityError(Exception):
@@ -147,3 +156,117 @@ def sub_allocate(*, asset, department, employee, quantity, performed_by):
         performed_by=performed_by,
         kind=TransferKind.SUB_ALLOCATE,
     )
+
+
+def create_request(*, asset, requested_by, for_holder_type, for_holder_id, quantity_requested):
+    """Raise demand for `quantity_requested` units of `asset`."""
+    if quantity_requested <= 0:
+        raise ValueError("quantity_requested must be positive")
+    return AllocationRequest.objects.create(
+        asset=asset,
+        requested_by=requested_by,
+        for_holder_type=for_holder_type,
+        for_holder_id=for_holder_id,
+        quantity_requested=quantity_requested,
+    )
+
+
+def spare_quantity(*, asset, department_id):
+    """Department's current holding: quantity it has not already sub-allocated to an employee.
+
+    `sub_allocate` moves quantity out of the department's own Holding row and into the
+    employee's, so the department's live Holding.quantity is already net of everything it
+    has sub-allocated -- it does not need to be subtracted again here.
+    """
+    dept_holding = Holding.objects.filter(
+        asset=asset, holder_type=HolderType.DEPARTMENT, holder_id=department_id
+    ).first()
+    return dept_holding.quantity if dept_holding else 0
+
+
+@transaction.atomic
+def fulfill_request(*, request, from_holder_type, from_holder_id, quantity, performed_by):
+    """
+    Fulfill (fully or partially) an AllocationRequest from a given source holder.
+    from_holder_type=MANAGER -> Asset Manager fulfilling from the unallocated pool.
+    from_holder_type=DEPARTMENT -> a peer Department Head fulfilling from their own spare quantity.
+    """
+    locked_request = AllocationRequest.objects.select_for_update().get(pk=request.pk)
+    if locked_request.status in (
+        RequestStatus.FULFILLED,
+        RequestStatus.REJECTED,
+        RequestStatus.CANCELLED,
+    ):
+        raise ValueError(f"Request is already {locked_request.status} and cannot be fulfilled.")
+
+    remaining = locked_request.quantity_requested - locked_request.quantity_fulfilled
+    if quantity > remaining:
+        raise InsufficientQuantityError(
+            f"Request only needs {remaining} more, cannot fulfill {quantity}."
+        )
+
+    kind = (
+        TransferKind.FULFILL_REQUEST
+        if from_holder_type == HolderType.MANAGER
+        else TransferKind.PEER_TRANSFER
+    )
+    transfer = move_quantity(
+        asset=locked_request.asset,
+        from_holder_type=from_holder_type,
+        from_holder_id=from_holder_id,
+        to_holder_type=locked_request.for_holder_type,
+        to_holder_id=locked_request.for_holder_id,
+        quantity=quantity,
+        performed_by=performed_by,
+        kind=kind,
+        request=locked_request,
+    )
+
+    locked_request.quantity_fulfilled = F("quantity_fulfilled") + quantity
+    locked_request.save(update_fields=["quantity_fulfilled"])
+    locked_request.refresh_from_db()
+    locked_request.status = (
+        RequestStatus.FULFILLED
+        if locked_request.quantity_fulfilled >= locked_request.quantity_requested
+        else RequestStatus.PARTIALLY_FULFILLED
+    )
+    locked_request.save(update_fields=["status"])
+    return transfer
+
+
+@transaction.atomic
+def reject_request(*, request, performed_by):
+    locked_request = AllocationRequest.objects.select_for_update().get(pk=request.pk)
+    if locked_request.status in (
+        RequestStatus.FULFILLED,
+        RequestStatus.REJECTED,
+        RequestStatus.CANCELLED,
+    ):
+        raise ValueError(f"Request is already {locked_request.status}.")
+    locked_request.status = RequestStatus.REJECTED
+    locked_request.save(update_fields=["status"])
+    return locked_request
+
+
+@transaction.atomic
+def cancel_request(*, request, performed_by):
+    locked_request = AllocationRequest.objects.select_for_update().get(pk=request.pk)
+    if locked_request.requested_by_id != performed_by.id:
+        raise InvalidHolderError("Only the requester can cancel this request.")
+    if locked_request.status in (
+        RequestStatus.FULFILLED,
+        RequestStatus.REJECTED,
+        RequestStatus.CANCELLED,
+    ):
+        raise ValueError(f"Request is already {locked_request.status}.")
+    locked_request.status = RequestStatus.CANCELLED
+    locked_request.save(update_fields=["status"])
+    return locked_request
+
+
+def open_requests_for_peer_fulfillment(*, asset):
+    """Requests still needing quantity, for departments holding spare units to see and act on."""
+    return AllocationRequest.objects.filter(
+        asset=asset,
+        status__in=(RequestStatus.OPEN, RequestStatus.PARTIALLY_FULFILLED),
+    ).order_by("created_at")
