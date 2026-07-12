@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.authentication",
     "apps.organization",
+    "apps.resource_allocation",
 ]
 
 MIDDLEWARE = [
