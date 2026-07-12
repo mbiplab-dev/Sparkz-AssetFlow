@@ -11,7 +11,7 @@ import {
   parseISO,
   startOfWeek,
 } from "date-fns";
-import { CalendarClock, ChevronLeft, ChevronRight, MapPin, Plus, Tag } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Download, MapPin, Plus, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import {
   listBookings,
   type Booking,
 } from "@/lib/api/booking";
+import { downloadCsv } from "@/lib/api/exports";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 
 const HOURS = Array.from({ length: 13 }, (_, i) => 8 + i); // 8..20
@@ -115,19 +116,29 @@ export default function BookingPage() {
             Reserve rooms, vehicles, and equipment with overlap-protected time slots.
           </p>
         </div>
-        {canBook ? (
+        <div className="flex items-center gap-2">
           <Button
-            onClick={() => {
-              setCreateSeed(null);
-              setCreateOpen(true);
-            }}
-            className="rounded-full"
-            disabled={!selected}
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCsv("bookings")}
           >
-            <Plus />
-            New Booking
+            <Download />
+            Export CSV
           </Button>
-        ) : null}
+          {canBook ? (
+            <Button
+              onClick={() => {
+                setCreateSeed(null);
+                setCreateOpen(true);
+              }}
+              className="rounded-full"
+              disabled={!selected}
+            >
+              <Plus />
+              New Booking
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_1fr]">

@@ -93,7 +93,7 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 /** Persistent desktop sidebar (hidden below md). */
 export function AppSidebar() {
   return (
-    <aside className="bg-sidebar border-sidebar-border hidden w-60 shrink-0 flex-col border-r md:flex">
+    <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-hidden border-r md:flex">
       <AppSidebarBrand />
       <AppSidebarNav />
     </aside>

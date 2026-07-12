@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
+import { Download, MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useCan } from "@/lib/auth/permissions";
+import { downloadCsv } from "@/lib/api/exports";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
@@ -209,12 +210,23 @@ export default function AssetsPage() {
             Register and track assets through their full lifecycle.
           </p>
         </div>
-        {canRegister && (
-          <Button onClick={openRegister} className="w-full shrink-0 rounded-full sm:w-auto">
-            <PackagePlus />
-            Register Asset
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCsv("assets")}
+            className="w-full sm:w-auto"
+          >
+            <Download />
+            Export CSV
           </Button>
-        )}
+          {canRegister && (
+            <Button onClick={openRegister} className="w-full shrink-0 rounded-full sm:w-auto">
+              <PackagePlus />
+              Register Asset
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Building2, Download, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { downloadCsv } from "@/lib/api/exports";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
@@ -172,10 +173,21 @@ export function DepartmentsTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={openCreate} className="w-full shrink-0 rounded-full sm:w-auto">
-          <Plus />
-          Add Department
-        </Button>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCsv("departments")}
+            className="w-full sm:w-auto"
+          >
+            <Download />
+            Export CSV
+          </Button>
+          <Button onClick={openCreate} className="w-full shrink-0 rounded-full sm:w-auto">
+            <Plus />
+            Add Department
+          </Button>
+        </div>
       </div>
 
       <Card>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeftRight, MoreHorizontal, Package, Plus, RotateCcw, Search } from "lucide-react";
+import { ArrowLeftRight, Download, MoreHorizontal, Package, Plus, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ import {
   type ResourceAsset,
   type Transfer,
 } from "@/lib/api/allocation";
+import { downloadCsv } from "@/lib/api/exports";
 import { ApiError } from "@/lib/api/http";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { listDepartments, listEmployees, type Department, type Employee } from "@/lib/api/organization";
@@ -358,12 +359,22 @@ export default function AllocationPage() {
             className="w-64 pl-8"
           />
         </div>
-        {showAllocateButton && (
-          <Button onClick={openAllocate} className="rounded-full">
-            <Plus />
-            {canAllocate ? "Allocate asset" : "Request allocation"}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCsv("holdings")}
+          >
+            <Download />
+            Export CSV
           </Button>
-        )}
+          {showAllocateButton && (
+            <Button onClick={openAllocate} className="rounded-full">
+              <Plus />
+              {canAllocate ? "Allocate asset" : "Request allocation"}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>

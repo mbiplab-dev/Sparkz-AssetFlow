@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Wrench } from "lucide-react";
+import { Download, Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { DiagnoseDialog } from "@/components/maintenance/DiagnoseDialog";
@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCan } from "@/lib/auth/permissions";
 import { listAssets, type Asset } from "@/lib/api/assets";
+import { downloadCsv } from "@/lib/api/exports";
 import {
   approveMaintenance,
   listMaintenanceRequests,
@@ -144,12 +145,22 @@ export default function MaintenancePage() {
             Raise, approve, and resolve maintenance requests across the asset fleet.
           </p>
         </div>
-        {canRaise ? (
-          <Button onClick={() => setRaiseOpen(true)} className="rounded-full">
-            <Plus />
-            Raise Request
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCsv("maintenance")}
+          >
+            <Download />
+            Export CSV
           </Button>
-        ) : null}
+          {canRaise ? (
+            <Button onClick={() => setRaiseOpen(true)} className="rounded-full">
+              <Plus />
+              Raise Request
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {/* KPI strip */}
