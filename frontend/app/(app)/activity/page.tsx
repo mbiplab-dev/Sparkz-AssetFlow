@@ -192,17 +192,12 @@ function ActivityPageContent() {
               </TableHeader>
               <TableBody>
                 {logs.map((log) => {
-                  const { icon: Icon, tint, bg } = activityIcon(
-                    `${log.action} ${log.message}`,
-                  );
+                  const { icon: Icon, tint, bg } = activityIcon(`${log.action} ${log.message}`);
                   return (
                     <TableRow key={log.id}>
                       <TableCell>
                         <span
-                          className={cn(
-                            "flex size-8 items-center justify-center rounded-lg",
-                            bg,
-                          )}
+                          className={cn("flex size-8 items-center justify-center rounded-lg", bg)}
                         >
                           <Icon className={cn("size-3.5", tint)} />
                         </span>

@@ -250,7 +250,7 @@ export default function NotificationsPage() {
       <div
         role="tablist"
         aria-label="Filter notifications"
-        className="scrollbar-thin -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5"
+        className="-mx-1 flex scrollbar-thin gap-1.5 overflow-x-auto px-1 pb-0.5"
       >
         {FILTERS.map(({ value, label }) => {
           const active = filter === value;
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
               {label}
               <span
                 className={cn(
-                  "tabular-nums rounded-full px-1.5 py-px text-[10px] font-semibold",
+                  "rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums",
                   active ? "bg-primary/15 text-primary" : "bg-muted text-ink-muted",
                 )}
               >
@@ -342,13 +342,7 @@ export default function NotificationsPage() {
   );
 }
 
-function NotificationRow({
-  item,
-  unread,
-}: {
-  item: NotificationItem;
-  unread: boolean;
-}) {
+function NotificationRow({ item, unread }: { item: NotificationItem; unread: boolean }) {
   const meta = kindMeta(item.kind);
   const Icon = meta.icon;
   const overdue = item.is_overdue || item.kind === "overdue_return";

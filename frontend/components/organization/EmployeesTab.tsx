@@ -57,12 +57,7 @@ import { useAuth } from "@/context/AuthContext";
 import { roleLabel } from "@/lib/auth/permissions";
 import { StatusBadge } from "./StatusBadge";
 
-const EMPLOYEE_ROLES: EmployeeRole[] = [
-  "admin",
-  "asset_manager",
-  "department_head",
-  "employee",
-];
+const EMPLOYEE_ROLES: EmployeeRole[] = ["admin", "asset_manager", "department_head", "employee"];
 
 const ROLE_TINTS: Record<EmployeeRole, string> = {
   admin: "border-accent-purple/30 bg-accent-purple/20 text-accent-purple-deep",
