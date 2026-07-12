@@ -1,5 +1,5 @@
 /**
- * Auth shell — warm paper canvas + elevated white card (ex-auth-form-card in DESIGN.md).
+ * Auth shell — warm paper canvas + elevated white card.
  * Full-height, padded for phones, safe-area aware.
  */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
