@@ -175,3 +175,132 @@ class HoldingScopingApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         holder_ids = {(r["holder_type"], r["holder_id"]) for r in response.data}
         self.assertEqual(holder_ids, {("employee", self.employee_a.id)})
+
+
+class AllocationRequestApiTests(APITestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(name="Vehicles")
+        self.manager = User.objects.create_user(
+            email="mgr11@example.com",
+            password="pw",
+            full_name="Manager",
+            role=UserRole.ASSET_MANAGER,
+        )
+        self.dept_a = Department.objects.create(name="Dept A")
+        self.dept_c = Department.objects.create(name="Dept C")
+        self.head_a = User.objects.create_user(
+            email="head-a11@example.com",
+            password="pw",
+            full_name="Head A",
+            role=UserRole.DEPARTMENT_HEAD,
+            department=self.dept_a,
+        )
+        self.head_c = User.objects.create_user(
+            email="head-c11@example.com",
+            password="pw",
+            full_name="Head C",
+            role=UserRole.DEPARTMENT_HEAD,
+            department=self.dept_c,
+        )
+        self.dept_a.head = self.head_a
+        self.dept_a.save()
+        self.dept_c.head = self.head_c
+        self.dept_c.save()
+        self.asset = services.register_asset(
+            name="Cars",
+            category=self.category,
+            total_quantity=10,
+            condition="good",
+            location="Lot A",
+            is_bookable=False,
+            created_by=self.manager,
+        )
+        # All 10 cars already pushed to Dept A. Manager pool is empty.
+        services.allocate(
+            asset=self.asset,
+            to_holder_type=HolderType.DEPARTMENT,
+            to_holder_id=self.dept_a.id,
+            quantity=10,
+            performed_by=self.manager,
+        )
+
+    def test_dept_c_requests_two_cars_and_dept_a_fulfills_via_broadcast(self):
+        self.client.force_authenticate(self.head_c)
+        create_response = self.client.post(
+            "/api/resources/requests/",
+            {
+                "asset": self.asset.id,
+                "for_holder_type": "department",
+                "for_holder_id": self.dept_c.id,
+                "quantity_requested": 2,
+            },
+        )
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED, create_response.data)
+        request_id = create_response.data["id"]
+
+        self.client.force_authenticate(self.head_a)
+        broadcast_response = self.client.get(
+            f"/api/resources/requests/broadcast/?asset={self.asset.id}"
+        )
+        self.assertEqual(broadcast_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(broadcast_response.data), 1)
+        self.assertEqual(broadcast_response.data[0]["id"], request_id)
+
+        fulfill_response = self.client.post(
+            f"/api/resources/requests/{request_id}/fulfill/", {"quantity": 2}
+        )
+        self.assertEqual(fulfill_response.status_code, status.HTTP_200_OK, fulfill_response.data)
+        self.assertEqual(fulfill_response.data["status"], "fulfilled")
+        self.assertEqual(fulfill_response.data["quantity_fulfilled"], 2)
+
+    def test_asset_manager_can_reject_a_request(self):
+        self.client.force_authenticate(self.head_c)
+        create_response = self.client.post(
+            "/api/resources/requests/",
+            {
+                "asset": self.asset.id,
+                "for_holder_type": "department",
+                "for_holder_id": self.dept_c.id,
+                "quantity_requested": 2,
+            },
+        )
+        request_id = create_response.data["id"]
+
+        self.client.force_authenticate(self.manager)
+        reject_response = self.client.post(f"/api/resources/requests/{request_id}/reject/")
+        self.assertEqual(reject_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(reject_response.data["status"], "rejected")
+
+    def test_requester_can_cancel_own_request(self):
+        self.client.force_authenticate(self.head_c)
+        create_response = self.client.post(
+            "/api/resources/requests/",
+            {
+                "asset": self.asset.id,
+                "for_holder_type": "department",
+                "for_holder_id": self.dept_c.id,
+                "quantity_requested": 2,
+            },
+        )
+        request_id = create_response.data["id"]
+
+        cancel_response = self.client.post(f"/api/resources/requests/{request_id}/cancel/")
+        self.assertEqual(cancel_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(cancel_response.data["status"], "cancelled")
+
+    def test_other_department_head_cannot_cancel_someone_elses_request(self):
+        self.client.force_authenticate(self.head_c)
+        create_response = self.client.post(
+            "/api/resources/requests/",
+            {
+                "asset": self.asset.id,
+                "for_holder_type": "department",
+                "for_holder_id": self.dept_c.id,
+                "quantity_requested": 2,
+            },
+        )
+        request_id = create_response.data["id"]
+
+        self.client.force_authenticate(self.head_a)
+        cancel_response = self.client.post(f"/api/resources/requests/{request_id}/cancel/")
+        self.assertEqual(cancel_response.status_code, status.HTTP_403_FORBIDDEN)

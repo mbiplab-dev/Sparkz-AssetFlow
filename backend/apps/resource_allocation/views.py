@@ -9,11 +9,13 @@ from apps.authentication.models import UserRole
 from apps.organization.models import Department
 
 from . import services
-from .models import Asset, HolderType, Holding, Transfer
-from .permissions import IsAssetManager
+from .models import MANAGER_HOLDER_ID, AllocationRequest, Asset, HolderType, Holding, Transfer
+from .permissions import IsAssetManager, IsAssetManagerOrDepartmentHead
 from .serializers import (
     AdjustStockSerializer,
+    AllocationRequestSerializer,
     AssetSerializer,
+    FulfillRequestSerializer,
     HoldingSerializer,
     TransferSerializer,
 )
@@ -153,3 +155,151 @@ class TransferViewSet(viewsets.ReadOnlyModelViewSet):
         if asset_id:
             qs = qs.filter(asset_id=asset_id)
         return qs
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Resources / Requests"], summary="List allocation requests"),
+    retrieve=extend_schema(tags=["Resources / Requests"], summary="Get an allocation request"),
+    create=extend_schema(tags=["Resources / Requests"], summary="Raise an allocation request"),
+)
+class AllocationRequestViewSet(viewsets.ModelViewSet):
+    """
+    Requests for asset quantity. Any authenticated user may create one for
+    themselves or their own department; Asset Manager and peer Department
+    Heads fulfill them (see `fulfill`, `broadcast`).
+    """
+
+    queryset = AllocationRequest.objects.select_related("asset", "requested_by").all()
+    serializer_class = AllocationRequestSerializer
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        # fulfill/reject/cancel act on requests that may belong to another
+        # department entirely (that's the point of peer fulfillment via
+        # broadcast) or that the acting user doesn't own outright (cancel).
+        # Their authorization is enforced by permission_classes and by the
+        # service layer (e.g. cancel_request raising InvalidHolderError),
+        # not by this list/retrieve visibility scoping.
+        if self.action in ("fulfill", "reject", "cancel"):
+            return qs
+        if user.role == UserRole.ASSET_MANAGER:
+            return qs
+        if user.role == UserRole.DEPARTMENT_HEAD:
+            dept = Department.objects.filter(head=user).first()
+            dept_id = dept.id if dept else None
+            return qs.filter(
+                Q(requested_by=user)
+                | Q(for_holder_type=HolderType.DEPARTMENT, for_holder_id=dept_id)
+            )
+        return qs.filter(requested_by=user)
+
+    def perform_create(self, serializer):
+        request_obj = services.create_request(
+            asset=serializer.validated_data["asset"],
+            requested_by=self.request.user,
+            for_holder_type=serializer.validated_data["for_holder_type"],
+            for_holder_id=serializer.validated_data["for_holder_id"],
+            quantity_requested=serializer.validated_data["quantity_requested"],
+        )
+        serializer.instance = request_obj
+
+    @extend_schema(
+        tags=["Resources / Requests"],
+        summary="List open requests this department could fulfill from spare quantity",
+        parameters=[],
+        responses=AllocationRequestSerializer(many=True),
+    )
+    @action(
+        detail=False, methods=["get"], url_path="broadcast", permission_classes=[IsAuthenticated]
+    )
+    def broadcast(self, request):
+        asset_id = request.query_params.get("asset")
+        if not asset_id:
+            return Response({"detail": "asset query param is required."}, status=400)
+        asset = Asset.objects.get(pk=asset_id)
+
+        if request.user.role == UserRole.ASSET_MANAGER:
+            dept_ids_with_spare = [
+                d.id
+                for d in Department.objects.all()
+                if services.spare_quantity(asset=asset, department_id=d.id) > 0
+            ]
+        else:
+            dept = Department.objects.filter(head=request.user).first()
+            if not dept or services.spare_quantity(asset=asset, department_id=dept.id) <= 0:
+                return Response([])
+            dept_ids_with_spare = [dept.id]
+
+        open_requests = (
+            services.open_requests_for_peer_fulfillment(asset=asset)
+            .filter(for_holder_type=HolderType.DEPARTMENT)
+            .exclude(for_holder_id__in=dept_ids_with_spare)
+        )
+        return Response(AllocationRequestSerializer(open_requests, many=True).data)
+
+    @extend_schema(
+        tags=["Resources / Requests"],
+        summary="Fulfill a request (Asset Manager from the pool, or a peer Department Head)",
+        request=FulfillRequestSerializer,
+        responses=AllocationRequestSerializer,
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated, IsAssetManagerOrDepartmentHead],
+    )
+    def fulfill(self, request, pk=None):
+        allocation_request = self.get_object()
+        serializer = FulfillRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        quantity = serializer.validated_data["quantity"]
+
+        if request.user.role == UserRole.ASSET_MANAGER:
+            from_holder_type, from_holder_id = HolderType.MANAGER, MANAGER_HOLDER_ID
+        else:
+            dept = Department.objects.filter(head=request.user).first()
+            if not dept:
+                return Response(
+                    {"detail": "You do not head a department."},
+                    status=403,
+                )
+            from_holder_type, from_holder_id = HolderType.DEPARTMENT, dept.id
+
+        services.fulfill_request(
+            request=allocation_request,
+            from_holder_type=from_holder_type,
+            from_holder_id=from_holder_id,
+            quantity=quantity,
+            performed_by=request.user,
+        )
+        allocation_request.refresh_from_db()
+        return Response(AllocationRequestSerializer(allocation_request).data)
+
+    @extend_schema(
+        tags=["Resources / Requests"],
+        summary="Reject a request",
+        responses=AllocationRequestSerializer,
+    )
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsAssetManager])
+    def reject(self, request, pk=None):
+        allocation_request = self.get_object()
+        services.reject_request(request=allocation_request, performed_by=request.user)
+        allocation_request.refresh_from_db()
+        return Response(AllocationRequestSerializer(allocation_request).data)
+
+    @extend_schema(
+        tags=["Resources / Requests"],
+        summary="Cancel own request",
+        responses=AllocationRequestSerializer,
+    )
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def cancel(self, request, pk=None):
+        allocation_request = self.get_object()
+        try:
+            services.cancel_request(request=allocation_request, performed_by=request.user)
+        except services.InvalidHolderError as exc:
+            return Response({"detail": str(exc)}, status=403)
+        allocation_request.refresh_from_db()
+        return Response(AllocationRequestSerializer(allocation_request).data)
