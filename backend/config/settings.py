@@ -26,14 +26,20 @@ environ.Env.read_env(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# Default is long enough for HS256 JWT (≥32 bytes). Override in production via env.
 SECRET_KEY = env(
-    "SECRET_KEY", default="django-insecure-6a)al+vsghbit)4mus((37u^5_c1a8k-*2l$l@(p9h5kjo^5m@"
+    "SECRET_KEY",
+    default="django-insecure-assetflow-dev-key-change-me-32b+",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = []
+# Comma-separated list in env; defaults allow local dev + Django test client.
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1", "0.0.0.0", "testserver"],
+)
 
 
 # Application definition
@@ -55,6 +61,9 @@ INSTALLED_APPS = [
     "apps.audits",
     "apps.dashboard",
     "apps.resource_allocation",
+    "apps.maintenance",
+    "apps.booking",
+    "apps.activity",
 ]
 
 MIDDLEWARE = [
@@ -165,7 +174,54 @@ SPECTACULAR_SETTINGS = {
             "name": "Assets / Locations",
             "description": "Physical locations for assets and audit scoping.",
         },
+        {
+            "name": "Maintenance",
+            "description": "Maintenance request workflow: pending → approved/rejected → in progress → resolved (Screen 6).",
+        },
+        {
+            "name": "Activity",
+            "description": "Persistent audit trail of user and domain actions.",
+        },
+        {
+            "name": "Dashboard / Exports",
+            "description": "CSV downloads for operational datasets.",
+        },
     ],
+}
+
+# ---------------------------------------------------------------------------
+# Logging — mirror activity events to backend/logs/activity.log
+# ---------------------------------------------------------------------------
+
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "activity": {
+            "format": "%(asctime)s %(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+        },
+    },
+    "handlers": {
+        "activity_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "activity.log"),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "activity",
+        },
+    },
+    "loggers": {
+        "assetflow.activity": {
+            "handlers": ["activity_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
 }
 
 

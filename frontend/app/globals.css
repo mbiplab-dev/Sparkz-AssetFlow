@@ -121,10 +121,55 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+    /* Prevent iOS text-size adjust from breaking layouts */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
+  body {
+    @apply bg-background text-foreground;
+    /* Avoid horizontal scroll from full-bleed children */
+    overflow-x: hidden;
+  }
+}
+
+/* Touch-friendly scrolling for horizontal filter / tab strips */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
+
+/*
+ * Sonner toast portal — stay above dialogs/sheets and never get clipped by
+ * html/body overflow-hidden on the app shell.
+ */
+[data-sonner-toaster] {
+  z-index: 9999 !important;
+  pointer-events: none;
+}
+
+[data-sonner-toast] {
+  pointer-events: auto;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast] [data-title] {
+  color: var(--foreground) !important;
+  font-weight: 600;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--destructive) !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--color-accent-green, #1aae39) !important;
 }

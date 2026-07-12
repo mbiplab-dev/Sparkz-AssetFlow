@@ -42,16 +42,18 @@ export function OnboardingEmptyState({ role }: { role: UserRole }) {
   const { title, desc, cta, href, icon: Icon } = CTA[role];
 
   return (
-    <div className="bg-card animate-in fade-in zoom-in-95 fill-mode-both ring-foreground/10 rounded-xl p-8 ring-1 duration-500 ease-out">
+    <div className="bg-card animate-in fade-in zoom-in-95 fill-mode-both ring-foreground/10 rounded-xl p-5 ring-1 duration-500 ease-out sm:p-8">
       <div className="flex flex-col items-center gap-3 text-center">
         <span className="bg-accent-sky/15 flex size-12 items-center justify-center rounded-xl">
           <Sparkles className="text-accent-sky size-6" />
         </span>
         <div className="flex flex-col gap-1.5">
-          <h3 className="font-display text-ink text-xl font-bold tracking-tight">{title}</h3>
-          <p className="text-ink-muted max-w-md text-sm">{desc}</p>
+          <h3 className="font-display text-ink text-lg font-bold tracking-tight sm:text-xl">
+            {title}
+          </h3>
+          <p className="text-ink-muted mx-auto max-w-md text-sm">{desc}</p>
         </div>
-        <Button asChild className={cn("mt-1 rounded-full")}>
+        <Button asChild className={cn("mt-1 w-full rounded-full sm:w-auto")}>
           <Link href={href}>
             <Icon />
             {cta}

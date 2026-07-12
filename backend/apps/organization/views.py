@@ -144,8 +144,28 @@ class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
             )
         serializer = EmployeeRoleUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user.role = serializer.validated_data["role"]
+        previous_role = user.role
+        new_role = serializer.validated_data["role"]
+        user.role = new_role
         user.save(update_fields=["role"])
+        try:
+            from apps.activity.services import log_activity
+
+            log_activity(
+                action="user.role_change",
+                message=(
+                    f"{request.user.full_name or request.user.email} changed role of "
+                    f"{user.full_name or user.email} from {previous_role} to {new_role}"
+                ),
+                actor=request.user,
+                entity_type="user",
+                entity_id=user.pk,
+                before_data={"role": previous_role},
+                after_data={"role": new_role},
+                ip_addr=request.META.get("REMOTE_ADDR"),
+            )
+        except Exception:
+            pass
         return Response(EmployeeSerializer(user).data)
 
     @extend_schema(

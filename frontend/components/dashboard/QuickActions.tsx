@@ -4,40 +4,46 @@ import Link from "next/link";
 import { ArrowLeftRight, CalendarPlus, PackagePlus, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/lib/auth/permissions";
 
 export function QuickActions({ pendingTransfers }: { pendingTransfers: number }) {
   const { user } = useAuth();
+  const canRegisterAssets = useCan("assets.register");
+  const canBook = useCan("bookings.create");
+  const canRaiseMaintenance = useCan("maintenance.raise");
+  const canApproveTransfers = useCan("transfers.approve");
+
   if (!user) return null;
 
-  const canRegisterAssets = user.role === "admin" || user.role === "asset_manager";
-  const canApproveTransfers =
-    user.role === "admin" || user.role === "asset_manager" || user.role === "department_head";
-
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
+    <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
       {canRegisterAssets && (
-        <Button asChild className="rounded-full">
+        <Button asChild className="w-full rounded-full sm:w-auto">
           <Link href="/assets">
             <PackagePlus />
             Register Asset
           </Link>
         </Button>
       )}
-      <Button asChild variant="outline" className="rounded-full">
-        <Link href="/booking">
-          <CalendarPlus />
-          Book Resource
-        </Link>
-      </Button>
-      <Button asChild variant="outline" className="rounded-full">
-        <Link href="/maintenance">
-          <Wrench />
-          Raise Maintenance
-        </Link>
-      </Button>
+      {canBook && (
+        <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
+          <Link href="/booking">
+            <CalendarPlus />
+            Book Resource
+          </Link>
+        </Button>
+      )}
+      {canRaiseMaintenance && (
+        <Button asChild variant="outline" className="w-full rounded-full sm:w-auto">
+          <Link href="/maintenance">
+            <Wrench />
+            Raise Maintenance
+          </Link>
+        </Button>
+      )}
 
       {canApproveTransfers && pendingTransfers > 0 && (
-        <Button asChild variant="secondary" className="rounded-full">
+        <Button asChild variant="secondary" className="w-full rounded-full sm:w-auto">
           <Link href="/allocation">
             <ArrowLeftRight />
             Approve Transfers

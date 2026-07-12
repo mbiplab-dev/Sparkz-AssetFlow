@@ -41,16 +41,16 @@ export function DashboardHeader({
   });
 
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+      <div className="flex min-w-0 flex-col gap-1">
         <p className="text-ink-faint text-xs font-semibold tracking-wide uppercase">{dateLabel}</p>
-        <h2 className="font-display text-ink text-2xl font-bold tracking-tight sm:text-3xl">
+        <h2 className="font-display text-ink text-xl font-bold tracking-tight break-words sm:text-2xl md:text-3xl">
           {greeting}, {firstNameOf(user.full_name)}
         </h2>
         <p className="text-ink-muted text-sm">
           You&apos;re signed in as{" "}
           <span className="text-ink-secondary font-medium">{ROLE_LABELS[user.role]}</span>.
-          Here&apos;s your operational snapshot.
+          <span className="hidden sm:inline"> Here&apos;s your operational snapshot.</span>
         </p>
       </div>
 
@@ -59,7 +59,7 @@ export function DashboardHeader({
         size="sm"
         onClick={onRefresh}
         disabled={isRefreshing}
-        className="rounded-md"
+        className="w-full rounded-md sm:w-auto"
       >
         <RefreshCw className={isRefreshing ? "animate-spin" : ""} />
         {isRefreshing ? "Refreshing" : "Refresh"}
