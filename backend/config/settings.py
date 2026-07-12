@@ -149,42 +149,101 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Sparkz AssetFlow API",
-    "DESCRIPTION": "Enterprise Asset & Resource Management System — REST API.",
+    "DESCRIPTION": (
+        "Enterprise **Asset & Resource Management** REST API.\n\n"
+        "### Auth\n"
+        "Most endpoints require `Authorization: Bearer <access_token>`.\n"
+        "Obtain tokens via **Authentication** (`/api/auth/login/` etc.). "
+        "Refresh uses an httpOnly cookie (`POST /api/auth/refresh/`).\n\n"
+        "### Roles\n"
+        "`admin` · `asset_manager` · `department_head` · `employee`\n\n"
+        "### UIs\n"
+        "- Swagger: `/api/docs/`\n"
+        "- ReDoc: `/api/redoc/`\n"
+        "- Raw OpenAPI: `/api/schema/`\n"
+    ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/api",
+    "SORT_OPERATIONS": False,
     "TAGS": [
-        {"name": "Authentication", "description": "Signup, login, password reset, session."},
+        {"name": "Authentication", "description": "Signup, login, OTP, password reset, JWT session."},
         {
             "name": "Organization / Departments",
-            "description": "Admin CRUD for departments (Screen 3 Tab A).",
+            "description": "Admin CRUD for departments.",
         },
         {
             "name": "Organization / Categories",
-            "description": "Admin CRUD for asset categories (Screen 3 Tab B).",
+            "description": "Admin CRUD for asset categories.",
         },
         {
             "name": "Organization / Employees",
-            "description": "Employee directory + role/status/department assignment (Screen 3 Tab C).",
+            "description": "Employee directory + role/status/department assignment.",
         },
         {
             "name": "Assets",
-            "description": "Asset registration, directory, and lifecycle (Screen 4).",
+            "description": "Physical asset catalog, registration, lifecycle status.",
         },
         {
             "name": "Assets / Locations",
             "description": "Physical locations for assets and audit scoping.",
         },
         {
-            "name": "Maintenance",
-            "description": "Maintenance request workflow: pending → approved/rejected → in progress → resolved (Screen 6).",
+            "name": "Resources / Assets",
+            "description": "Quantity-tracked resource pool catalog (allocate stock).",
         },
         {
-            "name": "Activity",
-            "description": "Persistent audit trail of user and domain actions.",
+            "name": "Resources / Holdings",
+            "description": "Who currently holds how much of each resource asset.",
+        },
+        {
+            "name": "Resources / Transfers",
+            "description": "Immutable movement ledger.",
+        },
+        {
+            "name": "Resources / Requests",
+            "description": "Allocation requests, fulfill / reject / cancel / broadcast.",
+        },
+        {
+            "name": "Resources / Allocate",
+            "description": "Push quantity from manager pool (or sub-allocate).",
+        },
+        {
+            "name": "Resources / Return",
+            "description": "Return quantity to the manager pool.",
+        },
+        {
+            "name": "Booking",
+            "description": "Shared resource bookings with no-overlap constraint.",
+        },
+        {
+            "name": "Maintenance",
+            "description": "Maintenance workflow: pending → approved/rejected → in progress → resolved.",
+        },
+        {
+            "name": "Audits / Cycles",
+            "description": "Verification cycles: create, assign auditors, close.",
+        },
+        {
+            "name": "Audits / Items",
+            "description": "Per-asset verdicts within a cycle.",
+        },
+        {
+            "name": "Audits / Discrepancies",
+            "description": "Missing/damaged flags and resolve action.",
+        },
+        {
+            "name": "Dashboard",
+            "description": "KPIs, analytics reports, notification feed.",
         },
         {
             "name": "Dashboard / Exports",
             "description": "CSV downloads for operational datasets.",
+        },
+        {
+            "name": "Activity",
+            "description": "Persistent activity / audit trail log.",
         },
     ],
 }

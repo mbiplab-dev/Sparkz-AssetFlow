@@ -1,15 +1,19 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import AllocationRequest, Asset, HolderType, Holding, Transfer
 
 
 class AssetSerializer(serializers.ModelSerializer):
+    """Quantity-tracked catalog item (resource pool) — distinct from assets.Asset."""
+
     category_name = serializers.CharField(source="category.name", read_only=True)
     # Unallocated quantity sitting in the manager pool (what allocate can pull).
     available_quantity = serializers.SerializerMethodField()
 
     class Meta:
         model = Asset
+        ref_name = "ResourceAsset"
         fields = (
             "id",
             "name",
@@ -33,6 +37,7 @@ class AssetSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    @extend_schema_field(serializers.IntegerField())
     def get_available_quantity(self, obj):
         from .models import MANAGER_HOLDER_ID, HolderType, Holding
 

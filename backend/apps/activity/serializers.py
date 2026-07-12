@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import ActivityLog
@@ -25,11 +26,13 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_actor_name(self, obj):
         if not obj.actor_id:
             return None
         return obj.actor.full_name or obj.actor.email
 
+    @extend_schema_field(serializers.EmailField(allow_null=True))
     def get_actor_email(self, obj):
         if not obj.actor_id:
             return None

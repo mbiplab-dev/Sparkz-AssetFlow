@@ -48,6 +48,8 @@ class IsAssetManagerOrAdmin(BasePermission):
         request=MaintenanceRequestCreateSerializer,
         responses=MaintenanceRequestSerializer,
     ),
+    update=extend_schema(tags=["Maintenance"], summary="Replace a maintenance request"),
+    partial_update=extend_schema(tags=["Maintenance"], summary="Update a maintenance request"),
     destroy=extend_schema(tags=["Maintenance"], summary="Cancel a maintenance request"),
 )
 class MaintenanceRequestViewSet(viewsets.ModelViewSet):

@@ -208,8 +208,10 @@ docs:
 	@echo "  Raw schema:  http://localhost:$(BACKEND_PORT)/api/schema/"
 
 schema: ensure-env
-	cd $(BACKEND_DIR) && uv run python manage.py spectacular --file schema.yml
+	@echo "==> Generating OpenAPI schema..."
+	cd $(BACKEND_DIR) && uv run python manage.py spectacular --file schema.yml --validate
 	@echo "Wrote $(BACKEND_DIR)/schema.yml"
+	@echo "Browse: http://localhost:$(BACKEND_PORT)/api/docs/  (after make run-backend)"
 
 # ---- tunnel (optional external access) -------------------------------------
 tunnel:

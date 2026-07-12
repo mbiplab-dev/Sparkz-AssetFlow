@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.assets.models import Location
@@ -55,6 +56,7 @@ class AuditCycleSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
+    @extend_schema_field(AuditorBriefSerializer(many=True))
     def get_auditors(self, obj):
         # Prefetch when list/retrieve uses prefetch_related("auditors").
         return [{"id": u.id, "full_name": u.full_name or u.email} for u in obj.auditors.all()]

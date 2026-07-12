@@ -30,11 +30,13 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
     - Employee: only rows where they are the actor
     """
 
+    queryset = ActivityLog.objects.select_related("actor").all()
     serializer_class = ActivityLogSerializer
     permission_classes = [IsAuthenticated, CanViewActivity]
+    lookup_value_regex = r"[0-9]+"
 
     def get_queryset(self):
-        qs = ActivityLog.objects.select_related("actor").all()
+        qs = super().get_queryset()
         user = self.request.user
         role = getattr(user, "role", None)
 

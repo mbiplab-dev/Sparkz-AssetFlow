@@ -13,7 +13,8 @@ from datetime import date
 
 from django.apps import apps as django_apps
 from django.http import HttpResponse
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.views import APIView
 
 from apps.activity.permissions import CanExportData
@@ -50,6 +51,12 @@ class ExportDepartmentsView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of departments",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("departments")
@@ -93,6 +100,12 @@ class ExportCategoriesView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of asset categories",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("categories")
@@ -119,6 +132,12 @@ class ExportEmployeesView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of employees",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("employees")
@@ -160,6 +179,12 @@ class ExportAssetsView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of assets",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("assets")
@@ -226,6 +251,12 @@ class ExportHoldingsView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of active holdings (non-manager)",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("holdings")
@@ -281,6 +312,12 @@ class ExportBookingsView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of bookings",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("bookings")
@@ -341,6 +378,12 @@ class ExportMaintenanceView(APIView):
     @extend_schema(
         tags=["Dashboard / Exports"],
         summary="Download CSV of maintenance requests",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="CSV file download (text/csv attachment)",
+            )
+        },
     )
     def get(self, request):
         response, writer = _csv_response("maintenance")

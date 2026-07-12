@@ -25,6 +25,25 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class AuthSessionSerializer(serializers.Serializer):
+    """Access JWT in the body + user payload. Refresh token is an httpOnly cookie."""
+
+    access = serializers.CharField(help_text="JWT access token (Bearer).")
+    user = UserSerializer()
+
+
+class AccessTokenSerializer(serializers.Serializer):
+    """Response from POST /api/auth/refresh/."""
+
+    access = serializers.CharField()
+
+
+class DetailMessageSerializer(serializers.Serializer):
+    """Generic `{detail: string}` response used across auth and resource actions."""
+
+    detail = serializers.CharField()
+
+
 class RegisterSerializer(serializers.Serializer):
     """Direct signup (no OTP). Creates the account immediately with role='employee'."""
 

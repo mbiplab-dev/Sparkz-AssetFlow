@@ -16,6 +16,9 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from .models import User
 from .otp import OTPError, issue_otp, verify_otp
 from .serializers import (
+    AccessTokenSerializer,
+    AuthSessionSerializer,
+    DetailMessageSerializer,
     LoginOTPRequestSerializer,
     LoginSerializer,
     OTPVerifySerializer,
@@ -48,7 +51,7 @@ class RegisterView(APIView):
         tags=["Authentication"],
         summary="Register a new employee (no OTP)",
         request=RegisterSerializer,
-        responses={201: UserSerializer},
+        responses={201: AuthSessionSerializer},
     )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -89,6 +92,7 @@ class RequestSignupOTPView(APIView):
         tags=["Authentication"],
         summary="Request signup verification code",
         request=SignupOTPRequestSerializer,
+        responses={200: DetailMessageSerializer},
     )
     def post(self, request):
         serializer = SignupOTPRequestSerializer(data=request.data)
@@ -124,7 +128,7 @@ class VerifySignupOTPView(APIView):
         tags=["Authentication"],
         summary="Verify signup code and create account",
         request=OTPVerifySerializer,
-        responses={201: UserSerializer},
+        responses={201: AuthSessionSerializer},
     )
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
@@ -170,6 +174,7 @@ class RequestLoginOTPView(APIView):
         tags=["Authentication"],
         summary="Request login verification code",
         request=LoginOTPRequestSerializer,
+        responses={200: DetailMessageSerializer},
     )
     def post(self, request):
         serializer = LoginOTPRequestSerializer(data=request.data)
@@ -199,7 +204,7 @@ class VerifyLoginOTPView(APIView):
         tags=["Authentication"],
         summary="Verify login code",
         request=OTPVerifySerializer,
-        responses={200: UserSerializer},
+        responses={200: AuthSessionSerializer},
     )
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
@@ -237,6 +242,7 @@ class RequestPasswordResetOTPView(APIView):
         tags=["Authentication"],
         summary="Request password-reset code",
         request=PasswordResetRequestSerializer,
+        responses={200: DetailMessageSerializer},
     )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -274,6 +280,7 @@ class ConfirmPasswordResetView(APIView):
         tags=["Authentication"],
         summary="Confirm password reset",
         request=PasswordResetConfirmSerializer,
+        responses={200: DetailMessageSerializer},
     )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -310,7 +317,7 @@ class LoginView(APIView):
         tags=["Authentication"],
         summary="Log in with email and password",
         request=LoginSerializer,
-        responses={200: UserSerializer},
+        responses={200: AuthSessionSerializer},
     )
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -329,8 +336,9 @@ class RefreshView(APIView):
 
     @extend_schema(
         tags=["Authentication"],
-        summary="Refresh access token",
+        summary="Refresh access token (uses httpOnly refresh cookie)",
         request=None,
+        responses={200: AccessTokenSerializer},
     )
     def post(self, request):
         raw_refresh_token = get_refresh_token_from_request(request)

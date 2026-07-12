@@ -339,7 +339,13 @@ class AllocateView(APIView):
         tags=["Resources / Allocate"],
         summary="Allocate or sub-allocate quantity",
         request=AllocateSerializer,
-        responses={200: None},
+        responses={
+            200: {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "example": {"detail": "Allocated."},
+            }
+        },
     )
     def post(self, request):
         serializer = AllocateSerializer(data=request.data)
@@ -398,7 +404,7 @@ class ReturnView(APIView):
         tags=["Resources / Return"],
         summary="Return quantity to the manager pool",
         request=ReturnSerializer,
-        responses={200: None},
+        responses={200: {"type": "object", "properties": {"detail": {"type": "string"}}}},
     )
     def post(self, request):
         serializer = ReturnSerializer(data=request.data)

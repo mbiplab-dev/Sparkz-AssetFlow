@@ -9,7 +9,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import DashboardSummarySerializer
+from .serializers import (
+    DashboardReportsSerializer,
+    DashboardSummarySerializer,
+    NotificationItemSerializer,
+)
 
 # Fixed status vocabularies so charts never omit zero buckets.
 ASSET_STATUSES = (
@@ -183,7 +187,11 @@ class DashboardReportsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(tags=["Dashboard"], summary="Full analytics report")
+    @extend_schema(
+        tags=["Dashboard"],
+        summary="Full analytics report",
+        responses=DashboardReportsSerializer,
+    )
     def get(self, request):
         today = timezone.localdate()
         now = timezone.now()
@@ -360,7 +368,11 @@ class DashboardNotificationsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(tags=["Dashboard"], summary="Activity feed")
+    @extend_schema(
+        tags=["Dashboard"],
+        summary="Activity / notifications feed",
+        responses=NotificationItemSerializer(many=True),
+    )
     def get(self, request):
         now = timezone.now()
         since = now - timedelta(days=30)

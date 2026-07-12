@@ -47,6 +47,8 @@ def _is_privileged(user) -> bool:
         request=BookingCreateSerializer,
         responses=BookingSerializer,
     ),
+    update=extend_schema(tags=["Booking"], summary="Replace a booking"),
+    partial_update=extend_schema(tags=["Booking"], summary="Update a booking"),
     destroy=extend_schema(
         tags=["Booking"],
         summary="Cancel a booking (soft delete)",

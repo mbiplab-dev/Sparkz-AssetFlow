@@ -31,6 +31,10 @@ class IsAssetManagerOrAdmin(BasePermission):
 @extend_schema_view(
     list=extend_schema(tags=["Assets"], summary="List / search assets"),
     retrieve=extend_schema(tags=["Assets"], summary="Get an asset"),
+    create=extend_schema(tags=["Assets"], summary="Register a new asset"),
+    update=extend_schema(tags=["Assets"], summary="Replace an asset"),
+    partial_update=extend_schema(tags=["Assets"], summary="Update an asset"),
+    destroy=extend_schema(tags=["Assets"], summary="Delete an asset"),
 )
 class AssetViewSet(viewsets.ModelViewSet):
     """
@@ -125,6 +129,9 @@ class AssetViewSet(viewsets.ModelViewSet):
     list=extend_schema(tags=["Assets / Locations"], summary="List locations"),
     retrieve=extend_schema(tags=["Assets / Locations"], summary="Get a location"),
     create=extend_schema(tags=["Assets / Locations"], summary="Create a location"),
+    update=extend_schema(tags=["Assets / Locations"], summary="Replace a location"),
+    partial_update=extend_schema(tags=["Assets / Locations"], summary="Update a location"),
+    destroy=extend_schema(tags=["Assets / Locations"], summary="Delete a location"),
 )
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()
