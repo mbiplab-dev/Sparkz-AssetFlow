@@ -6,6 +6,7 @@ from .views import (
     LogoutView,
     MeView,
     RefreshView,
+    RegisterView,
     RequestLoginOTPView,
     RequestPasswordResetOTPView,
     RequestSignupOTPView,
@@ -14,6 +15,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("register/", RegisterView.as_view(), name="auth-register"),
     path("register/request-otp/", RequestSignupOTPView.as_view(), name="auth-register-request-otp"),
     path("register/verify-otp/", VerifySignupOTPView.as_view(), name="auth-register-verify-otp"),
     path("login/", LoginView.as_view(), name="auth-login"),

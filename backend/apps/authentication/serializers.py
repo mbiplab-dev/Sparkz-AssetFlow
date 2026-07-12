@@ -25,6 +25,26 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class RegisterSerializer(serializers.Serializer):
+    """Direct signup (no OTP). Creates the account immediately with role='employee'."""
+
+    full_name = serializers.CharField(max_length=150, min_length=2)
+    email = serializers.EmailField()
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+    def validate_full_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Full name is required.")
+        return value
+
+
 class SignupOTPRequestSerializer(serializers.Serializer):
     """Validates signup details before an OTP is issued. Does not create a user.
 
