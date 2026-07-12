@@ -4,7 +4,7 @@ from django.db import connection
 from django.test import TestCase, TransactionTestCase
 
 from apps.authentication.models import User, UserRole
-from apps.organization.models import AssetCategory
+from apps.organization.models import AssetCategory, Department
 from apps.resource_allocation import services
 from apps.resource_allocation.models import (
     MANAGER_HOLDER_ID,
@@ -222,3 +222,109 @@ class ConcurrentMoveQuantityTests(TransactionTestCase):
             total=__import__("django.db.models", fromlist=["Sum"]).Sum("quantity")
         )["total"]
         self.assertEqual(total_held, 5)
+
+
+class AllocateTests(TestCase):
+    def setUp(self):
+        category = AssetCategory.objects.create(name="Vehicles")
+        self.manager_user = User.objects.create_user(
+            email="mgr5@example.com",
+            password="pw",
+            full_name="Manager",
+            role=UserRole.ASSET_MANAGER,
+        )
+        self.asset = services.register_asset(
+            name="Cars",
+            category=category,
+            total_quantity=10,
+            condition="good",
+            location="Lot A",
+            is_bookable=False,
+            created_by=self.manager_user,
+        )
+
+    def test_allocate_pushes_from_manager_pool_with_no_approval_check(self):
+        services.allocate(
+            asset=self.asset,
+            to_holder_type=HolderType.DEPARTMENT,
+            to_holder_id=1,
+            quantity=4,
+            performed_by=self.manager_user,
+        )
+        dept_holding = Holding.objects.get(
+            asset=self.asset,
+            holder_type=HolderType.DEPARTMENT,
+            holder_id=1,
+        )
+        self.assertEqual(dept_holding.quantity, 4)
+
+
+class SubAllocateTests(TestCase):
+    def setUp(self):
+        category = AssetCategory.objects.create(name="Vehicles")
+        self.dept = Department.objects.create(name="Sales")
+        self.head = User.objects.create_user(
+            email="head@example.com",
+            password="pw",
+            full_name="Head",
+            role=UserRole.DEPARTMENT_HEAD,
+            department=self.dept,
+        )
+        self.employee_in_dept = User.objects.create_user(
+            email="emp-in@example.com",
+            password="pw",
+            full_name="Employee In",
+            department=self.dept,
+        )
+        self.employee_other_dept = User.objects.create_user(
+            email="emp-out@example.com",
+            password="pw",
+            full_name="Employee Out",
+        )
+        self.asset = services.register_asset(
+            name="Cars",
+            category=category,
+            total_quantity=10,
+            condition="good",
+            location="Lot A",
+            is_bookable=False,
+            created_by=self.head,
+        )
+        services.allocate(
+            asset=self.asset,
+            to_holder_type=HolderType.DEPARTMENT,
+            to_holder_id=self.dept.id,
+            quantity=5,
+            performed_by=self.head,
+        )
+
+    def test_sub_allocate_to_own_employee_succeeds(self):
+        services.sub_allocate(
+            asset=self.asset,
+            department=self.dept,
+            employee=self.employee_in_dept,
+            quantity=2,
+            performed_by=self.head,
+        )
+        emp_holding = Holding.objects.get(
+            asset=self.asset,
+            holder_type=HolderType.EMPLOYEE,
+            holder_id=self.employee_in_dept.id,
+        )
+        dept_holding = Holding.objects.get(
+            asset=self.asset,
+            holder_type=HolderType.DEPARTMENT,
+            holder_id=self.dept.id,
+        )
+        self.assertEqual(emp_holding.quantity, 2)
+        self.assertEqual(dept_holding.quantity, 3)
+
+    def test_sub_allocate_to_employee_outside_department_rejected(self):
+        with self.assertRaises(services.InvalidHolderError):
+            services.sub_allocate(
+                asset=self.asset,
+                department=self.dept,
+                employee=self.employee_other_dept,
+                quantity=1,
+                performed_by=self.head,
+            )

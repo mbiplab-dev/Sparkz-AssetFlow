@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.models import F
 
-from .models import MANAGER_HOLDER_ID, Asset, HolderType, Holding, Transfer
+from .models import MANAGER_HOLDER_ID, Asset, HolderType, Holding, Transfer, TransferKind
 
 
 class InsufficientQuantityError(Exception):
@@ -117,3 +117,33 @@ def adjust_stock(*, asset, delta, performed_by):
     asset.save(update_fields=["total_quantity"])
     asset.refresh_from_db()
     return asset
+
+
+def allocate(*, asset, to_holder_type, to_holder_id, quantity, performed_by):
+    """Asset Manager discretionary push from the unallocated manager pool. No approval check."""
+    return move_quantity(
+        asset=asset,
+        from_holder_type=HolderType.MANAGER,
+        from_holder_id=MANAGER_HOLDER_ID,
+        to_holder_type=to_holder_type,
+        to_holder_id=to_holder_id,
+        quantity=quantity,
+        performed_by=performed_by,
+        kind=TransferKind.ALLOCATE,
+    )
+
+
+def sub_allocate(*, asset, department, employee, quantity, performed_by):
+    """Department Head pushes quantity they hold to one of their own employees."""
+    if employee.department_id != department.id:
+        raise InvalidHolderError("Employee does not belong to this department.")
+    return move_quantity(
+        asset=asset,
+        from_holder_type=HolderType.DEPARTMENT,
+        from_holder_id=department.id,
+        to_holder_type=HolderType.EMPLOYEE,
+        to_holder_id=employee.id,
+        quantity=quantity,
+        performed_by=performed_by,
+        kind=TransferKind.SUB_ALLOCATE,
+    )
