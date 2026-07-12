@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/assets/", include("apps.assets.urls")),
     path("api/dashboard/", include("apps.dashboard.urls")),
     path("api/resources/", include("apps.resource_allocation.urls")),
+    path("api/audits/", include("apps.audits.urls")),
     path("api/maintenance/", include("apps.maintenance.urls")),
     path("api/booking/", include("apps.booking.urls")),
     path("api/activity/", include("apps.activity.urls")),
