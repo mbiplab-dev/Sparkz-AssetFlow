@@ -328,3 +328,51 @@ class SubAllocateTests(TestCase):
                 quantity=1,
                 performed_by=self.head,
             )
+
+
+class ReturnQuantityTests(TestCase):
+    def setUp(self):
+        category = AssetCategory.objects.create(name="Vehicles")
+        self.manager_user = User.objects.create_user(
+            email="mgr7@example.com",
+            password="pw",
+            full_name="Manager",
+            role=UserRole.ASSET_MANAGER,
+        )
+        self.asset = services.register_asset(
+            name="Cars",
+            category=category,
+            total_quantity=10,
+            condition="good",
+            location="Lot A",
+            is_bookable=False,
+            created_by=self.manager_user,
+        )
+        services.allocate(
+            asset=self.asset,
+            to_holder_type=HolderType.DEPARTMENT,
+            to_holder_id=1,
+            quantity=4,
+            performed_by=self.manager_user,
+        )
+
+    def test_return_moves_quantity_back_to_manager_pool(self):
+        services.return_quantity(
+            asset=self.asset,
+            from_holder_type=HolderType.DEPARTMENT,
+            from_holder_id=1,
+            quantity=2,
+            performed_by=self.manager_user,
+        )
+        manager_holding = Holding.objects.get(
+            asset=self.asset,
+            holder_type=HolderType.MANAGER,
+            holder_id=MANAGER_HOLDER_ID,
+        )
+        dept_holding = Holding.objects.get(
+            asset=self.asset,
+            holder_type=HolderType.DEPARTMENT,
+            holder_id=1,
+        )
+        self.assertEqual(manager_holding.quantity, 8)
+        self.assertEqual(dept_holding.quantity, 2)

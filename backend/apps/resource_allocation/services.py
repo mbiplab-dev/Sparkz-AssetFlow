@@ -142,6 +142,20 @@ def allocate(*, asset, to_holder_type, to_holder_id, quantity, performed_by):
     )
 
 
+def return_quantity(*, asset, from_holder_type, from_holder_id, quantity, performed_by):
+    """Return held quantity back to the unallocated manager pool."""
+    return move_quantity(
+        asset=asset,
+        from_holder_type=from_holder_type,
+        from_holder_id=from_holder_id,
+        to_holder_type=HolderType.MANAGER,
+        to_holder_id=MANAGER_HOLDER_ID,
+        quantity=quantity,
+        performed_by=performed_by,
+        kind=TransferKind.RETURN,
+    )
+
+
 def sub_allocate(*, asset, department, employee, quantity, performed_by):
     """Department Head pushes quantity they hold to one of their own employees."""
     if employee.department_id != department.id:
