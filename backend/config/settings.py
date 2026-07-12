@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "apps.dashboard",
     "apps.resource_allocation",
     "apps.maintenance",
+    "apps.booking",
 ]
 
 MIDDLEWARE = [
