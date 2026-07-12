@@ -102,14 +102,14 @@ DATABASES = {
 
 # Cache
 # https://docs.djangoproject.com/en/5.2/topics/cache/
+#
+# In-process local memory cache. Used by the OTP flow. Fine for dev and
+# single-process deploys; swap the backend if you need multi-process sharing.
 
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env("REDIS_URL", default="redis://localhost:6379/0"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "assetflow-default",
     }
 }
 

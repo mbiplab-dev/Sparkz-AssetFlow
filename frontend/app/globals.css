@@ -1,26 +1,129 @@
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
+/*
+ * Design tokens sourced from DESIGN.md (Notion theme) — keep the two in sync.
+ * shadcn/ui components consume the semantic :root variables below; the raw
+ * Notion palette is also exposed directly (bg-canvas-soft, text-ink-muted, …).
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-primary-active: #005bab;
+  --color-on-primary: #ffffff;
+  /* DESIGN.md colors.secondary (deep indigo hero band) — "secondary" itself is a shadcn token */
+  --color-night: #213183;
+  --color-canvas: #ffffff;
+  --color-canvas-soft: #f6f5f4;
+  --color-surface: #ffffff;
+  --color-ink: #000000;
+  --color-ink-secondary: #31302e;
+  --color-ink-muted: #615d59;
+  --color-ink-faint: #a39e98;
+  --color-hairline: #e6e6e6;
+  --color-accent-sky: #62aef0;
+  --color-accent-purple: #d6b6f6;
+  --color-accent-purple-deep: #391c57;
+  --color-accent-pink: #ff64c8;
+  --color-accent-orange: #dd5b00;
+  --color-accent-orange-deep: #793400;
+  --color-accent-teal: #2a9d99;
+  --color-accent-green: #1aae39;
+  --color-accent-brown: #523410;
+
+  --font-sans: "Inter", -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: "Google Sans", "Inter", -apple-system, system-ui, sans-serif;
+  --font-heading: var(--font-display);
+
+  --radius-xs: 4px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Notion palette mapped onto shadcn semantic tokens (light-only theme). */
+:root {
+  --background: #f6f5f4;
+  --foreground: #191918;
+  --card: #ffffff;
+  --card-foreground: #191918;
+  --popover: #ffffff;
+  --popover-foreground: #191918;
+  --primary: #0075de;
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff;
+  --secondary-foreground: #191918;
+  --muted: #f1f0ee;
+  --muted-foreground: #615d59;
+  --accent: #f1f0ee;
+  --accent-foreground: #31302e;
+  --destructive: #d44c47;
+  --border: #e6e6e6;
+  --input: #e6e6e6;
+  --ring: #0075de;
+  --chart-1: #62aef0;
+  --chart-2: #2a9d99;
+  --chart-3: #dd5b00;
+  --chart-4: #d6b6f6;
+  --chart-5: #ff64c8;
+  --radius: 8px;
+  --sidebar: #f6f5f4;
+  --sidebar-foreground: #31302e;
+  --sidebar-primary: #0075de;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eceae8;
+  --sidebar-accent-foreground: #191918;
+  --sidebar-border: #e6e6e6;
+  --sidebar-ring: #0075de;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

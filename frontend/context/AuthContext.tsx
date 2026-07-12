@@ -13,14 +13,13 @@ import {
   fetchCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
+  register as registerRequest,
   requestLoginOtp as requestLoginOtpRequest,
-  requestSignupOtp as requestSignupOtpRequest,
   verifyLoginOtp as verifyLoginOtpRequest,
-  verifySignupOtp as verifySignupOtpRequest,
   type AuthUser,
   type LoginInput,
   type OtpVerifyInput,
-  type SignupOtpRequestInput,
+  type RegisterInput,
 } from "@/lib/auth/authApi";
 import { clearAccessToken, getAccessToken } from "@/lib/auth/tokenStorage";
 
@@ -28,8 +27,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
   login: (input: LoginInput) => Promise<void>;
-  requestSignupOtp: (input: SignupOtpRequestInput) => Promise<void>;
-  verifySignupOtp: (input: OtpVerifyInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
   requestLoginOtp: (email: string) => Promise<void>;
   verifyLoginOtp: (input: OtpVerifyInput) => Promise<void>;
   logout: () => Promise<void>;
@@ -73,12 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(session.user);
   }, []);
 
-  const requestSignupOtp = useCallback(async (input: SignupOtpRequestInput) => {
-    await requestSignupOtpRequest(input);
-  }, []);
-
-  const verifySignupOtp = useCallback(async (input: OtpVerifyInput) => {
-    const session = await verifySignupOtpRequest(input);
+  const register = useCallback(async (input: RegisterInput) => {
+    const session = await registerRequest(input);
     setUser(session.user);
   }, []);
 
@@ -101,22 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isLoading,
       login,
-      requestSignupOtp,
-      verifySignupOtp,
+      register,
       requestLoginOtp,
       verifyLoginOtp,
       logout,
     }),
-    [
-      user,
-      isLoading,
-      login,
-      requestSignupOtp,
-      verifySignupOtp,
-      requestLoginOtp,
-      verifyLoginOtp,
-      logout,
-    ],
+    [user, isLoading, login, register, requestLoginOtp, verifyLoginOtp, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
