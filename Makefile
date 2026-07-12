@@ -17,9 +17,9 @@ help:
 	@echo "  run              Run backend + frontend concurrently"
 	@echo "  run-backend      Run Django dev server (port 8000)"
 	@echo "  run-frontend     Run Next.js dev server (port 3000)"
-	@echo "  db               Start postgres + redis in docker (prints DATABASE_URL)"
-	@echo "  db-down          Stop the postgres + redis containers"
-	@echo "  db-logs          Tail postgres + redis logs"
+	@echo "  db               Start postgres in docker (prints DATABASE_URL)"
+	@echo "  db-down          Stop the postgres container"
+	@echo "  db-logs          Tail postgres logs"
 	@echo "  init-db          Wait for postgres, then migrate"
 	@echo "  migrate          Run Django migrations"
 	@echo "  install          Install backend + frontend dependencies"
@@ -45,15 +45,15 @@ run-frontend:
 
 # ---- db --------------------------------------------------------------------
 db:
-	docker compose up -d db redis
+	docker compose up -d db
 	@echo ""
-	@echo "Postgres + Redis are up. DATABASE_URL=$(DB_URL)"
+	@echo "Postgres is up. DATABASE_URL=$(DB_URL)"
 
 db-down:
 	docker compose down
 
 db-logs:
-	docker compose logs -f db redis
+	docker compose logs -f db
 
 # ---- init / migrate --------------------------------------------------------
 migrate:

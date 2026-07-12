@@ -33,7 +33,7 @@ Ship a user-centric, responsive app with clean modular architecture, realistic r
 | Backend | Django 5.2, Django REST Framework, SimpleJWT |
 | API docs | drf-spectacular (Swagger `/api/docs/`, ReDoc `/api/redoc/`) |
 | DB | PostgreSQL 16 |
-| Cache / OTP | Redis 7 |
+| Cache / OTP | Django local-memory cache |
 | Package managers | Backend: `uv` · Frontend: `npm` |
 | Lint/format | Backend: `ruff` · Frontend: `eslint` + `prettier` |
 
@@ -43,7 +43,7 @@ Ship a user-centric, responsive app with clean modular architecture, realistic r
 Sparkz-AssetFlow/
 ├── AGENTS.md                 # This file
 ├── Makefile                  # install / run / migrate / lint / docs
-├── docker-compose.yml        # postgres + redis
+├── docker-compose.yml        # postgres
 ├── db-schema.txt             # Canonical DB design + hard invariants
 ├── backend/
 │   ├── apps/
@@ -247,7 +247,7 @@ Prefer **one Django app per domain module** rather than one mega-app. Cross-modu
 
 ### Settings / env
 
-- `DATABASE_URL` components: `POSTGRES_*`, `REDIS_URL`
+- `DATABASE_URL` components: `POSTGRES_*`
 - `SECRET_KEY`, `DEBUG`, `CORS_ALLOWED_ORIGINS`
 - SMTP: `EMAIL_HOST_USER`, `GOOGLE_SMTP_PASSWORD` (or console email backend for local)
 - JWT: access ~15m, refresh ~7d
@@ -290,7 +290,7 @@ Prefer **one Django app per domain module** rather than one mega-app. Cross-modu
 
 ### Done / in progress
 
-- [x] Monorepo skeleton, Makefile, docker-compose (Postgres + Redis)
+- [x] Monorepo skeleton, Makefile, docker-compose (Postgres)
 - [x] Auth: custom User with roles, OTP signup/login/password reset, JWT + refresh cookie
 - [x] Organization: Department, AssetCategory, Employee directory + Admin role promotion
 - [x] Frontend auth screens + basic dashboard shell
@@ -318,7 +318,7 @@ From repo root:
 
 ```bash
 make install          # backend uv sync + frontend npm install
-make db               # start postgres + redis
+make db               # start postgres
 make init-db          # wait for postgres + migrate
 make migrate          # Django migrations
 make run              # backend :8000 + frontend :3000

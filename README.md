@@ -6,7 +6,7 @@ Enterprise Asset & Resource Management System. Backend: Django + DRF + PostgreSQ
 
 - [`uv`](https://docs.astral.sh/uv/) — Python package manager (installs backend deps + Python 3.11)
 - `node` >= 20 and `npm`
-- `docker` + `docker compose` — for Postgres and Redis
+- `docker` + `docker compose` — for Postgres
 
 ## Quick start
 
@@ -14,7 +14,7 @@ Enterprise Asset & Resource Management System. Backend: Django + DRF + PostgreSQ
 # 1. Install backend and frontend dependencies
 make install
 
-# 2. Start Postgres + Redis, wait for the DB, run migrations, seed admin
+# 2. Start Postgres, wait for the DB, run migrations, seed admin
 make init-db
 
 # 3. Run backend (:8000) and frontend (:3000) side by side
@@ -39,9 +39,9 @@ Everyone else who signs up through the UI is created as `role="employee"`. Only 
 | ------------------- | ---------------------------------------------------------------- |
 | `make help`         | List available targets                                           |
 | `make install`      | Install backend (`uv sync`) and frontend (`npm install`)         |
-| `make db`           | Start Postgres + Redis containers                                |
+| `make db`           | Start Postgres container                                         |
 | `make db-down`      | Stop the containers                                              |
-| `make db-logs`      | Tail Postgres + Redis logs                                       |
+| `make db-logs`      | Tail Postgres logs                                               |
 | `make migrate`      | Apply Django migrations                                          |
 | `make init-db`      | `db` + wait for health + `migrate` (seeds admin on first run)    |
 | `make run`          | Run backend and frontend concurrently                            |
@@ -89,6 +89,6 @@ backend/
   config/             # settings, urls
 frontend/
   app/                # Next.js App Router
-docker-compose.yml    # postgres + redis
+docker-compose.yml    # postgres
 Makefile              # everything above
 ```
