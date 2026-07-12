@@ -155,6 +155,86 @@ class AuditApiTests(APITestCase):
         self.asset.refresh_from_db()
         self.assertEqual(self.asset.status, AssetStatus.LOST)
 
+    def test_double_close_via_api_rejected(self):
+        cycle = services.create_cycle(
+            name="Q1 Audit",
+            starts_on="2026-01-01",
+            ends_on="2026-01-31",
+            scope_department=self.dept,
+            scope_location=None,
+            auditor_ids=[],
+            created_by=self.manager,
+        )
+
+        self.client.force_authenticate(self.admin)
+        first = self.client.post(f"/api/audits/cycles/{cycle.id}/close/")
+        self.assertEqual(first.status_code, status.HTTP_200_OK, first.data)
+
+        second = self.client.post(f"/api/audits/cycles/{cycle.id}/close/")
+        self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_asset_manager_can_replace_auditors_on_open_cycle(self):
+        cycle = services.create_cycle(
+            name="Q1 Audit",
+            starts_on="2026-01-01",
+            ends_on="2026-01-31",
+            scope_department=self.dept,
+            scope_location=None,
+            auditor_ids=[self.auditor.id],
+            created_by=self.manager,
+        )
+        other_auditor = User.objects.create_user(
+            email="auditor2@example.com",
+            password="pw",
+            full_name="Auditor 2",
+        )
+
+        self.client.force_authenticate(self.manager)
+        response = self.client.post(
+            f"/api/audits/cycles/{cycle.id}/auditors/",
+            {"auditor_ids": [other_auditor.id]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        cycle.refresh_from_db()
+        self.assertEqual(list(cycle.auditors.all()), [other_auditor])
+
+    def test_employee_cannot_replace_auditors(self):
+        cycle = services.create_cycle(
+            name="Q1 Audit",
+            starts_on="2026-01-01",
+            ends_on="2026-01-31",
+            scope_department=self.dept,
+            scope_location=None,
+            auditor_ids=[self.auditor.id],
+            created_by=self.manager,
+        )
+
+        self.client.force_authenticate(self.employee)
+        response = self.client.post(
+            f"/api/audits/cycles/{cycle.id}/auditors/",
+            {"auditor_ids": [self.auditor.id]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cannot_replace_auditors_on_closed_cycle(self):
+        cycle = services.create_cycle(
+            name="Q1 Audit",
+            starts_on="2026-01-01",
+            ends_on="2026-01-31",
+            scope_department=self.dept,
+            scope_location=None,
+            auditor_ids=[self.auditor.id],
+            created_by=self.manager,
+        )
+        services.close_cycle(cycle=cycle, performed_by=self.manager)
+
+        self.client.force_authenticate(self.manager)
+        response = self.client.post(
+            f"/api/audits/cycles/{cycle.id}/auditors/",
+            {"auditor_ids": [self.auditor.id]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_admin_can_resolve_discrepancy(self):
         cycle = services.create_cycle(
             name="Q1 Audit",

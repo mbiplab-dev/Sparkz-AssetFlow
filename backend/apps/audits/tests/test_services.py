@@ -2,7 +2,7 @@ import datetime
 
 from django.test import TestCase
 
-from apps.assets.models import Asset, AssetCondition, AssetStatus
+from apps.assets.models import Asset, AssetCondition, AssetStatus, Location
 from apps.audits import services
 from apps.audits.models import AuditCycleStatus, AuditItem, AuditVerdict, Discrepancy
 from apps.authentication.models import User, UserRole
@@ -84,6 +84,27 @@ class CreateCycleTests(AuditsFixtureMixin, TestCase):
         )
         self.assertTrue(all(i.verdict == AuditVerdict.PENDING for i in cycle.items.all()))
 
+    def test_scope_location_only_snapshots_assets_in_that_location(self):
+        self.make_fixture()
+        location = Location.objects.create(name="Warehouse 1")
+        in_location_asset = Asset.objects.create(
+            name="Monitor",
+            category=self.category,
+            department=self.dept_a,
+            location=location,
+        )
+        cycle = services.create_cycle(
+            name="Location Audit",
+            starts_on=datetime.date(2026, 1, 1),
+            ends_on=datetime.date(2026, 1, 31),
+            scope_department=None,
+            scope_location=location,
+            auditor_ids=[],
+            created_by=self.manager,
+        )
+        item_assets = set(AuditItem.objects.filter(cycle=cycle).values_list("asset_id", flat=True))
+        self.assertEqual(item_assets, {in_location_asset.id})
+
 
 class SetVerdictTests(AuditsFixtureMixin, TestCase):
     def setUp(self):
@@ -134,6 +155,43 @@ class SetVerdictTests(AuditsFixtureMixin, TestCase):
         self.item.refresh_from_db()
         self.assertEqual(self.item.verified_by, self.auditor)
         self.assertIsNotNone(self.item.verified_at)
+
+    def test_direct_transition_between_flagged_kinds_reuses_discrepancy_row(self):
+        services.set_verdict(
+            item=self.item,
+            verdict=AuditVerdict.MISSING,
+            performed_by=self.auditor,
+            notes="not on shelf",
+        )
+        services.set_verdict(
+            item=self.item,
+            verdict=AuditVerdict.DAMAGED,
+            performed_by=self.auditor,
+            notes="found broken",
+        )
+        self.assertEqual(Discrepancy.objects.filter(audit_item=self.item).count(), 1)
+        discrepancy = Discrepancy.objects.get(audit_item=self.item)
+        self.assertEqual(discrepancy.kind, "damaged")
+
+    def test_resubmitting_same_verdict_kind_preserves_resolution(self):
+        services.set_verdict(
+            item=self.item,
+            verdict=AuditVerdict.MISSING,
+            performed_by=self.auditor,
+            notes="not on shelf",
+        )
+        discrepancy = Discrepancy.objects.get(audit_item=self.item)
+        services.resolve_discrepancy(discrepancy=discrepancy, performed_by=self.manager)
+
+        services.set_verdict(
+            item=self.item,
+            verdict=AuditVerdict.MISSING,
+            performed_by=self.auditor,
+            notes="still missing, updated note",
+        )
+        discrepancy.refresh_from_db()
+        self.assertTrue(discrepancy.resolved)
+        self.assertEqual(discrepancy.detail, "still missing, updated note")
 
 
 class ResolveDiscrepancyTests(AuditsFixtureMixin, TestCase):

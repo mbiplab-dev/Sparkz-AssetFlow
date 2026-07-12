@@ -7,12 +7,13 @@ from rest_framework.response import Response
 from apps.authentication.models import UserRole
 
 from . import services
-from .models import AuditCycle, AuditItem, Discrepancy
+from .models import AuditCycle, AuditCycleStatus, AuditItem, Discrepancy
 from .serializers import (
     AuditCycleCreateSerializer,
     AuditCycleSerializer,
     AuditItemSerializer,
     AuditItemVerdictSerializer,
+    AuditorsUpdateSerializer,
     DiscrepancySerializer,
 )
 
@@ -81,6 +82,22 @@ class AuditCycleViewSet(viewsets.ModelViewSet):
         cycle.refresh_from_db()
         return Response(AuditCycleSerializer(cycle).data)
 
+    @extend_schema(
+        tags=["Audits / Cycles"],
+        summary="Set the auditors assigned to a cycle (replaces the full list)",
+        request=AuditorsUpdateSerializer,
+        responses=AuditCycleSerializer,
+    )
+    @action(detail=True, methods=["post"], url_path="auditors")
+    def set_auditors(self, request, pk=None):
+        cycle = self.get_object()
+        if cycle.status != AuditCycleStatus.CLOSED:
+            serializer = AuditorsUpdateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            cycle.auditors.set([u.id for u in serializer.validated_data["auditors"]])
+            return Response(AuditCycleSerializer(cycle).data)
+        return Response({"detail": "Cannot modify auditors on a closed cycle."}, status=400)
+
 
 @extend_schema_view(
     list=extend_schema(tags=["Audits / Items"], summary="List audit items"),
@@ -115,17 +132,17 @@ class AuditItemViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "Only an assigned auditor, admin, or asset manager can set a verdict."},
                 status=403,
             )
-        if item.cycle.status != "open":
-            return Response({"detail": "This cycle is closed."}, status=400)
-
         serializer = AuditItemVerdictSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        services.set_verdict(
-            item=item,
-            verdict=serializer.validated_data["verdict"],
-            performed_by=user,
-            notes=serializer.validated_data.get("notes", ""),
-        )
+        try:
+            services.set_verdict(
+                item=item,
+                verdict=serializer.validated_data["verdict"],
+                performed_by=user,
+                notes=serializer.validated_data.get("notes", ""),
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
         item.refresh_from_db()
         return Response(AuditItemSerializer(item).data)
 

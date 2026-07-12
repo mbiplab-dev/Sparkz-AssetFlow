@@ -42,6 +42,9 @@ def create_cycle(
 @transaction.atomic
 def set_verdict(*, item, verdict, performed_by, notes=""):
     """Record an auditor's verdict and keep the item's Discrepancy row in sync."""
+    if item.cycle.status != AuditCycleStatus.OPEN:
+        raise ValueError("This cycle is closed.")
+
     item.verdict = verdict
     item.verified_by = performed_by
     item.verified_at = timezone.now()
@@ -52,16 +55,21 @@ def set_verdict(*, item, verdict, performed_by, notes=""):
         kind = (
             DiscrepancyKind.MISSING if verdict == AuditVerdict.MISSING else DiscrepancyKind.DAMAGED
         )
-        Discrepancy.objects.update_or_create(
-            audit_item=item,
-            defaults={
-                "kind": kind,
-                "detail": notes,
-                "resolved": False,
-                "resolved_by": None,
-                "resolved_at": None,
-            },
-        )
+        existing = Discrepancy.objects.filter(audit_item=item).first()
+        if existing and existing.kind == kind:
+            existing.detail = notes
+            existing.save(update_fields=["detail"])
+        else:
+            Discrepancy.objects.update_or_create(
+                audit_item=item,
+                defaults={
+                    "kind": kind,
+                    "detail": notes,
+                    "resolved": False,
+                    "resolved_by": None,
+                    "resolved_at": None,
+                },
+            )
     else:
         Discrepancy.objects.filter(audit_item=item).delete()
 
@@ -80,6 +88,7 @@ def resolve_discrepancy(*, discrepancy, performed_by):
 @transaction.atomic
 def close_cycle(*, cycle, performed_by):
     """Lock the cycle and apply confirmed-missing/damaged verdicts to the real asset."""
+    cycle = AuditCycle.objects.select_for_update().get(pk=cycle.pk)
     if cycle.status == AuditCycleStatus.CLOSED:
         raise ValueError("Cycle is already closed.")
 
@@ -90,9 +99,13 @@ def close_cycle(*, cycle, performed_by):
         cycle.items.filter(verdict=AuditVerdict.DAMAGED).values_list("asset_id", flat=True)
     )
     if missing_asset_ids:
-        Asset.objects.filter(id__in=missing_asset_ids).update(status=AssetStatus.LOST)
+        Asset.objects.filter(id__in=missing_asset_ids).update(
+            status=AssetStatus.LOST, updated_at=timezone.now()
+        )
     if damaged_asset_ids:
-        Asset.objects.filter(id__in=damaged_asset_ids).update(condition=AssetCondition.DAMAGED)
+        Asset.objects.filter(id__in=damaged_asset_ids).update(
+            condition=AssetCondition.DAMAGED, updated_at=timezone.now()
+        )
 
     cycle.status = AuditCycleStatus.CLOSED
     cycle.closed_by = performed_by

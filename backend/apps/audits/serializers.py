@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.assets.models import Location
-from apps.authentication.models import User
+from apps.authentication.models import User, UserStatus
 from apps.organization.models import Department
 
 from .models import AuditCycle, AuditItem, AuditVerdict, Discrepancy
@@ -54,13 +54,22 @@ class AuditCycleCreateSerializer(serializers.Serializer):
     starts_on = serializers.DateField()
     ends_on = serializers.DateField()
     auditor_ids = serializers.PrimaryKeyRelatedField(
-        source="auditors", queryset=User.objects.all(), many=True, required=False
+        source="auditors",
+        queryset=User.objects.filter(status=UserStatus.ACTIVE),
+        many=True,
+        required=False,
     )
 
     def validate(self, attrs):
         if attrs["ends_on"] < attrs["starts_on"]:
             raise serializers.ValidationError({"ends_on": "Must be on/after starts_on."})
         return attrs
+
+
+class AuditorsUpdateSerializer(serializers.Serializer):
+    auditor_ids = serializers.PrimaryKeyRelatedField(
+        source="auditors", queryset=User.objects.filter(status=UserStatus.ACTIVE), many=True
+    )
 
 
 class AuditItemSerializer(serializers.ModelSerializer):
