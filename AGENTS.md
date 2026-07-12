@@ -204,6 +204,7 @@ When implementing Django models for bookings/allocations, prefer the same constr
 | --- | --- |
 | `apps.authentication` | Custom `User`, JWT login, OTP signup/login/password-reset, `/api/auth/*` |
 | `apps.organization` | Departments, asset categories, employees + role/status/dept updates; `/api/org/*` |
+| `apps.resource_allocation` | Quantity-based asset catalog + allocation/request/transfer workflow; `/api/resources/*` |
 | *(planned)* assets | Asset catalog, tags, attachments, lifecycle |
 | *(planned)* allocations | Allocations, transfers, returns |
 | *(planned)* bookings | Shared resource calendar + overlap rules |
@@ -298,8 +299,12 @@ Prefer **one Django app per domain module** rather than one mega-app. Cross-modu
 
 ### Not built yet (priority order for agents)
 
-1. Assets app (register, tags, lifecycle, search, attachments)
-2. Allocations + transfers + returns + overdue job/query
+1. ~~Assets app~~ / ~~Allocations + transfers + returns~~ → done as `apps.resource_allocation`
+   (quantity-based catalog + allocate/sub-allocate/request/peer-fulfill/return;
+   see `docs/superpowers/specs/2026-07-12-resource-allocation-design.md`).
+   Per-unit serialized tracking and overdue-return tracking were NOT built —
+   intentional deviation, quantity-only model.
+2. Bookings app (Screen 6) — still not built (planned as a separate `booking` app)
 3. Bookings + overlap constraints
 4. Maintenance workflow + asset status hooks
 5. Audit cycles + discrepancy report + close
