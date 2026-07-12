@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.organization",
     "apps.assets",
     "apps.dashboard",
+    "apps.resource_allocation",
 ]
 
 MIDDLEWARE = [
