@@ -21,6 +21,7 @@ from .serializers import (
     OTPVerifySerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    RegisterSerializer,
     SignupOTPRequestSerializer,
     UserSerializer,
 )
@@ -32,6 +33,47 @@ from .tokens import (
     rotate_refresh_token,
     set_refresh_cookie,
 )
+
+
+class RegisterView(APIView):
+    """Direct signup with no OTP step. Creates the account and logs the user in.
+
+    Accepts full_name, email, phone (optional), password. Role always defaults
+    to 'employee' — role is only assignable by admin via the organization APIs.
+    """
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Register a new employee (no OTP)",
+        request=RegisterSerializer,
+        responses={201: UserSerializer},
+    )
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            user = User.objects.create_user(
+                email=data["email"],
+                password=data["password"],
+                full_name=data["full_name"],
+                phone=data.get("phone", ""),
+            )
+        except IntegrityError:
+            return Response(
+                {"detail": "An account with this email already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        refresh_token, access_token = issue_tokens_for_user(user)
+        response = Response(
+            {"access": access_token, "user": UserSerializer(user).data},
+            status=status.HTTP_201_CREATED,
+        )
+        return set_refresh_cookie(response, refresh_token)
 
 
 class RequestSignupOTPView(APIView):

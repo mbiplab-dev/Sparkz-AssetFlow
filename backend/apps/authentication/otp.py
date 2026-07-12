@@ -1,9 +1,9 @@
-"""Redis-backed one-time-passcode issuance and verification.
+"""Cache-backed one-time-passcode issuance and verification.
 
 Each OTP is a random 6-digit code, hashed (bound to the email so it can't be
-replayed against a different address) before being cached, valid for
-OTP_TTL_SECONDS, rate-limited by a resend cooldown, and capped on incorrect
-verification attempts.
+replayed against a different address) before being cached in Django's default
+cache backend, valid for OTP_TTL_SECONDS, rate-limited by a resend cooldown,
+and capped on incorrect verification attempts.
 """
 
 import hashlib
