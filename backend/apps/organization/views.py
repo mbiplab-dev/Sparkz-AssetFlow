@@ -65,9 +65,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     retrieve=extend_schema(tags=["Organization / Categories"], summary="Get a category"),
     create=extend_schema(tags=["Organization / Categories"], summary="Create a category"),
     update=extend_schema(tags=["Organization / Categories"], summary="Replace a category"),
-    partial_update=extend_schema(
-        tags=["Organization / Categories"], summary="Update a category"
-    ),
+    partial_update=extend_schema(tags=["Organization / Categories"], summary="Update a category"),
     destroy=extend_schema(
         tags=["Organization / Categories"],
         summary="Soft-deactivate a category",

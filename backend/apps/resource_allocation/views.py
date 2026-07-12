@@ -323,6 +323,12 @@ class AllocateView(APIView):
 
     permission_classes = [IsAuthenticated, IsAssetManagerOrDepartmentHead]
 
+    @extend_schema(
+        tags=["Resources / Allocate"],
+        summary="Allocate or sub-allocate quantity",
+        request=AllocateSerializer,
+        responses={200: None},
+    )
     def post(self, request):
         serializer = AllocateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -376,6 +382,12 @@ class ReturnView(APIView):
 
     permission_classes = [IsAuthenticated, IsDepartmentHeadOrEmployee]
 
+    @extend_schema(
+        tags=["Resources / Return"],
+        summary="Return quantity to the manager pool",
+        request=ReturnSerializer,
+        responses={200: None},
+    )
     def post(self, request):
         serializer = ReturnSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
