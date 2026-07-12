@@ -35,6 +35,16 @@ export type TopUsedAsset = {
 };
 export type BookingHourLoad = { hour: number; count: number };
 
+export type DashboardTotals = {
+  assets_total: number;
+  assets_bookable: number;
+  bookings_active: number;
+  bookings_total: number;
+  maintenance_open: number;
+  holdings_out: number;
+  resource_pool_units: number;
+};
+
 export type DashboardReports = {
   assets_by_status: Record<string, number>;
   assets_by_category: CategoryCount[];
@@ -44,6 +54,7 @@ export type DashboardReports = {
   top_used_assets: TopUsedAsset[];
   booking_load_by_hour: BookingHourLoad[];
   overdue_returns_count: number;
+  totals?: DashboardTotals;
 };
 
 export async function getDashboardReports(): Promise<DashboardReports> {

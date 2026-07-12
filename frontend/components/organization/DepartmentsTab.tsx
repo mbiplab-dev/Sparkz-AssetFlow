@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptySelectOptions } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -307,13 +308,20 @@ export function DepartmentsTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No parent</SelectItem>
-                  {activeDepartments
-                    .filter((d) => d.id !== editing?.id)
-                    .map((d) => (
-                      <SelectItem key={d.id} value={d.id.toString()}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
+                  {activeDepartments.filter((d) => d.id !== editing?.id).length === 0 ? (
+                    <EmptySelectOptions
+                      title="No other departments"
+                      description="Create more departments to build a hierarchy."
+                    />
+                  ) : (
+                    activeDepartments
+                      .filter((d) => d.id !== editing?.id)
+                      .map((d) => (
+                        <SelectItem key={d.id} value={d.id.toString()}>
+                          {d.name}
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -330,11 +338,18 @@ export function DepartmentsTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>
-                  {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.full_name}
-                    </SelectItem>
-                  ))}
+                  {employees.length === 0 ? (
+                    <EmptySelectOptions
+                      title="No employees found"
+                      description="Employees appear after people sign up."
+                    />
+                  ) : (
+                    employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id.toString()}>
+                        {emp.full_name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

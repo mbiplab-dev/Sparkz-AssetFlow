@@ -108,6 +108,39 @@ def register_asset(*, name, category, total_quantity, condition, location, is_bo
     return asset
 
 
+def sync_catalog_into_resource_pool(*, performed_by) -> int:
+    """Ensure every main-catalog asset (`apps.assets.Asset`) is allocatable.
+
+    The allocate modal uses the resource_allocation quantity catalog. The
+    registration screen writes to `apps.assets`. This mirrors missing catalog
+    rows into the resource pool (1 unit each for unique physical assets) so
+    asset managers always see the full set when allocating.
+
+    Returns the number of newly registered resource assets.
+    """
+    from apps.assets.models import Asset as CatalogAsset
+
+    existing = set(Asset.objects.values_list("name", flat=True))
+    created = 0
+    for ca in CatalogAsset.objects.select_related("category").order_by("asset_tag"):
+        # Prefer tag-qualified name so duplicates in the catalog stay unique.
+        preferred = f"{ca.name} ({ca.asset_tag})"
+        if preferred in existing or ca.name in existing:
+            continue
+        register_asset(
+            name=preferred,
+            category=ca.category,
+            total_quantity=1,
+            condition=ca.get_condition_display() if hasattr(ca, "get_condition_display") else "",
+            location=ca.location.name if ca.location_id else "",
+            is_bookable=bool(ca.is_bookable),
+            created_by=performed_by,
+        )
+        existing.add(preferred)
+        created += 1
+    return created
+
+
 @transaction.atomic
 def adjust_stock(*, asset, delta, performed_by):
     """Increase/decrease total_quantity. Decreases can only draw down the unallocated pool."""

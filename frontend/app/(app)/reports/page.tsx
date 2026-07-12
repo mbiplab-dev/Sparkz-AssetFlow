@@ -222,6 +222,41 @@ export default function ReportsPage() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
+            {reports.totals && (
+              <Card className="md:col-span-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-ink text-sm font-semibold">
+                    Operational totals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {(
+                      [
+                        ["Total assets", reports.totals.assets_total],
+                        ["Bookable resources", reports.totals.assets_bookable],
+                        ["Active bookings", reports.totals.bookings_active],
+                        ["All bookings", reports.totals.bookings_total],
+                        ["Open maintenance", reports.totals.maintenance_open],
+                        ["Holdings checked out", reports.totals.holdings_out],
+                        ["Pool units available", reports.totals.resource_pool_units],
+                        ["Stale open requests", reports.overdue_returns_count],
+                      ] as const
+                    ).map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="border-border rounded-lg border bg-muted/30 px-3 py-2.5"
+                      >
+                        <p className="text-ink-muted text-xs font-medium">{label}</p>
+                        <p className="font-display text-ink mt-0.5 text-2xl font-bold tabular-nums">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <ReportCard title="Assets by status">
               <DonutChart data={reports.assets_by_status} />
             </ReportCard>

@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptySelectOptions } from "@/components/ui/empty-state";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/http";
 import {
@@ -162,11 +163,20 @@ function AssetEditForm({
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
+              {categories.length === 0 ? (
+                <EmptySelectOptions
+                  title="No categories found"
+                  description="Create categories in Organization setup."
+                  actionHref="/organization"
+                  actionLabel="Create a category →"
+                />
+              ) : (
+                categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {c.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -220,11 +230,18 @@ function AssetEditForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No location</SelectItem>
-                {locations.map((l) => (
-                  <SelectItem key={l.id} value={l.id.toString()}>
-                    {l.name}
-                  </SelectItem>
-                ))}
+                {locations.length === 0 ? (
+                  <EmptySelectOptions
+                    title="No locations found"
+                    description="Locations are optional until you add them."
+                  />
+                ) : (
+                  locations.map((l) => (
+                    <SelectItem key={l.id} value={l.id.toString()}>
+                      {l.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -241,11 +258,20 @@ function AssetEditForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No department</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id.toString()}>
-                    {d.name}
-                  </SelectItem>
-                ))}
+                {departments.length === 0 ? (
+                  <EmptySelectOptions
+                    title="No departments found"
+                    description="Create departments in Organization setup."
+                    actionHref="/organization"
+                    actionLabel="Create a department →"
+                  />
+                ) : (
+                  departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id.toString()}>
+                      {d.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

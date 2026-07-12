@@ -42,8 +42,8 @@ export function ActionNeededCard({ kpis }: { kpis: DashboardKPIs }) {
     },
     {
       key: "maintenance",
-      label: "Maintenance in progress",
-      sublabel: "Approved or being worked on today",
+      label: "Open maintenance",
+      sublabel: "Pending, approved, or in progress",
       href: "/maintenance",
       icon: Wrench,
       tint: "text-accent-orange",
@@ -52,8 +52,8 @@ export function ActionNeededCard({ kpis }: { kpis: DashboardKPIs }) {
     },
     {
       key: "returns",
-      label: "Upcoming returns",
-      sublabel: "Due back soon",
+      label: "Items checked out",
+      sublabel: "Currently held outside the pool",
       href: "/allocation",
       icon: Undo2,
       tint: "text-accent-pink",

@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptySelectOptions } from "@/components/ui/empty-state";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/http";
 import type { Asset } from "@/lib/api/assets";
@@ -131,8 +132,18 @@ export function RaiseRequestDialog({
                 <SelectValue placeholder="Select an asset" />
               </SelectTrigger>
               <SelectContent className="max-h-64">
-                {filteredAssets.length === 0 ? (
-                  <div className="text-ink-muted px-3 py-2 text-sm">No matches.</div>
+                {assets.length === 0 ? (
+                  <EmptySelectOptions
+                    title="No assets found"
+                    description="Register assets before raising maintenance."
+                    actionHref="/assets"
+                    actionLabel="Create assets →"
+                  />
+                ) : filteredAssets.length === 0 ? (
+                  <EmptySelectOptions
+                    title="No matching assets"
+                    description="Try a different search tag or name."
+                  />
                 ) : (
                   filteredAssets.map((a) => (
                     <SelectItem key={a.id} value={a.id.toString()}>

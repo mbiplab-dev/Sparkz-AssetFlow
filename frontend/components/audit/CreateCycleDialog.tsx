@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,31 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptySelectOptions } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AuditAuditor, CreateAuditCycleInput } from "@/lib/api/audits";
+import { listLocations, type Location } from "@/lib/api/assets";
+import {
+  listDepartments,
+  listEmployees,
+  type Department,
+  type Employee,
+} from "@/lib/api/organization";
 
-/** Demo org directory until create form loads real /api/org pickers. */
-const DEPTS = [
-  { id: "dept-eng", name: "Engineering" },
-  { id: "dept-ops", name: "Operations" },
-  { id: "dept-fac", name: "Facilities" },
-  { id: "dept-fin", name: "Finance" },
-];
-
-const LOCS = [
-  { id: "loc-east-3", name: "HQ East · Floor 3" },
-  { id: "loc-west", name: "HQ West" },
-  { id: "loc-yard-a", name: "Fleet Yard A" },
-  { id: "loc-wh-b", name: "Warehouse B" },
-];
-
-const AUDITOR_POOL = [
-  { id: "user-priya", full_name: "Priya Shah" },
-  { id: "user-jordan", full_name: "Jordan Lee" },
-  { id: "user-sam", full_name: "Sam Ortiz" },
-  { id: "user-morgan", full_name: "Morgan Blake" },
-];
-
-/** Same shape as CreateAuditCycleInput — form → API. */
 export type CreateCycleFormInput = CreateAuditCycleInput;
 
 type Props = {
@@ -63,6 +49,44 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    Promise.all([
+      listEmployees({ status: "active", role: "employee" }).catch(() => [] as Employee[]),
+      listDepartments({ status: "active" }).catch(() => [] as Department[]),
+      listLocations().catch(() => [] as Location[]),
+    ])
+      .then(([emps, depts, locs]) => {
+        if (cancelled) return;
+        setEmployees(
+          (Array.isArray(emps) ? emps : []).filter((e) => e.role === "employee"),
+        );
+        setDepartments(Array.isArray(depts) ? depts : []);
+        setLocations(Array.isArray(locs) ? locs : []);
+        setLoadingOptions(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadingOptions(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const availableAuditors = useMemo(
+    () =>
+      employees
+        .filter((e) => !auditors.some((a) => a.id === e.id))
+        .sort((a, b) => a.full_name.localeCompare(b.full_name)),
+    [employees, auditors],
+  );
+
   function reset() {
     setName("");
     setDeptId("none");
@@ -72,12 +96,16 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
     setAuditors([]);
     setError(null);
     setSubmitting(false);
+    setLoadingOptions(true);
   }
 
   function addAuditor(id: string) {
-    const person = AUDITOR_POOL.find((a) => a.id === id);
-    if (!person || auditors.some((a) => a.id === id)) return;
-    setAuditors((prev) => [...prev, person]);
+    const person = employees.find((e) => String(e.id) === id);
+    if (!person || auditors.some((a) => a.id === person.id)) return;
+    setAuditors((prev) => [
+      ...prev,
+      { id: person.id, full_name: person.full_name || person.email },
+    ]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -103,20 +131,15 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
       return;
     }
 
-    const dept = DEPTS.find((d) => d.id === deptId);
-    const loc = LOCS.find((l) => l.id === locId);
-
     setSubmitting(true);
     try {
       await onCreate({
         name: name.trim(),
-        scope_dept_id: dept?.id ?? null,
-        scope_dept_name: dept?.name ?? null,
-        scope_loc_id: loc?.id ?? null,
-        scope_loc_name: loc?.name ?? null,
+        scope_department: deptId === "none" ? null : Number(deptId),
+        scope_location: locId === "none" ? null : Number(locId),
         starts_on: startsOn,
         ends_on: endsOn,
-        auditors,
+        auditor_ids: auditors.map((a) => a.id),
       });
       reset();
       onOpenChange(false);
@@ -133,14 +156,15 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
         onOpenChange(v);
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[min(90dvh,40rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-lg font-bold tracking-tight">
             Create audit cycle
           </DialogTitle>
           <DialogDescription className="text-ink-muted">
-            Scope department and/or location, set the date range, assign auditors. Status starts as
-            draft.
+            Scope department and/or location, set dates, and assign employees as auditors.
+            Creating the cycle snapshots every in-scope asset as a pending verification item
+            (status = open).
           </DialogDescription>
         </DialogHeader>
 
@@ -170,16 +194,29 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
               <Field>
                 <FieldLabel>Department</FieldLabel>
                 <Select value={deptId} onValueChange={setDeptId}>
-                  <SelectTrigger className="rounded-xs">
+                  <SelectTrigger className="w-full rounded-xs">
                     <SelectValue placeholder="Optional" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {DEPTS.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
+                    {loadingOptions ? (
+                      <div className="px-3 py-2">
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ) : departments.length === 0 ? (
+                      <EmptySelectOptions
+                        title="No departments found"
+                        description="Create departments in Organization setup."
+                        actionHref="/organization"
+                        actionLabel="Create a department →"
+                      />
+                    ) : (
+                      departments.map((d) => (
+                        <SelectItem key={d.id} value={String(d.id)}>
+                          {d.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </Field>
@@ -187,16 +224,27 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
               <Field>
                 <FieldLabel>Location</FieldLabel>
                 <Select value={locId} onValueChange={setLocId}>
-                  <SelectTrigger className="rounded-xs">
+                  <SelectTrigger className="w-full rounded-xs">
                     <SelectValue placeholder="Optional" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {LOCS.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>
-                        {l.name}
-                      </SelectItem>
-                    ))}
+                    {loadingOptions ? (
+                      <div className="px-3 py-2">
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ) : locations.length === 0 ? (
+                      <EmptySelectOptions
+                        title="No locations found"
+                        description="Locations are optional if a department is scoped."
+                      />
+                    ) : (
+                      locations.map((l) => (
+                        <SelectItem key={l.id} value={String(l.id)}>
+                          {l.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </Field>
@@ -227,7 +275,9 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
 
             <Field>
               <FieldLabel>Auditors</FieldLabel>
-              <FieldDescription>One or more auditors per cycle.</FieldDescription>
+              <FieldDescription>
+                Only users with role <span className="font-medium">employee</span> can be auditors.
+              </FieldDescription>
               <div className="flex flex-wrap gap-1.5">
                 {auditors.map((a) => (
                   <span
@@ -246,16 +296,55 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
                   </span>
                 ))}
               </div>
-              <Select onValueChange={(v) => addAuditor(v)}>
-                <SelectTrigger className="mt-2 rounded-xs">
-                  <SelectValue placeholder="Add auditor…" />
+              <Select
+                value=""
+                onValueChange={(v) => {
+                  if (v) addAuditor(v);
+                }}
+              >
+                <SelectTrigger className="mt-2 w-full rounded-xs">
+                  <SelectValue
+                    placeholder={
+                      loadingOptions
+                        ? "Loading employees…"
+                        : availableAuditors.length === 0
+                          ? employees.length === 0
+                            ? "No employees available"
+                            : "All employees already added"
+                          : "Add auditor…"
+                    }
+                  />
                 </SelectTrigger>
-                <SelectContent>
-                  {AUDITOR_POOL.filter((a) => !auditors.some((x) => x.id === a.id)).map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.full_name}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-72">
+                  {loadingOptions ? (
+                    <div className="space-y-2 px-3 py-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  ) : availableAuditors.length === 0 ? (
+                    <EmptySelectOptions
+                      title={
+                        employees.length === 0
+                          ? "No employees found"
+                          : "All employees already assigned"
+                      }
+                      description={
+                        employees.length === 0
+                          ? "Employees appear after people sign up."
+                          : "Every active employee is already on this cycle."
+                      }
+                    />
+                  ) : (
+                    availableAuditors.map((e) => (
+                      <SelectItem key={e.id} value={String(e.id)}>
+                        <span className="font-medium">{e.full_name}</span>
+                        <span className="text-ink-faint ml-2 text-xs">
+                          {e.email}
+                          {e.department_name ? ` · ${e.department_name}` : ""}
+                        </span>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </Field>
@@ -270,8 +359,8 @@ export function CreateCycleDialog({ open, onOpenChange, onCreate }: Props) {
             >
               Cancel
             </Button>
-            <Button type="submit" className="rounded-full" disabled={submitting}>
-              {submitting ? "Creating…" : "Create draft"}
+            <Button type="submit" className="rounded-full" disabled={submitting || loadingOptions}>
+              {submitting ? "Creating…" : "Create cycle"}
             </Button>
           </DialogFooter>
         </form>

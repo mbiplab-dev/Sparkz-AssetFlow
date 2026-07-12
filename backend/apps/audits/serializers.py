@@ -1,16 +1,33 @@
 from rest_framework import serializers
 
 from apps.assets.models import Location
-from apps.authentication.models import User, UserStatus
+from apps.authentication.models import User, UserRole, UserStatus
 from apps.organization.models import Department
 
 from .models import AuditCycle, AuditItem, AuditVerdict, Discrepancy
 
 
+class AuditorBriefSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    full_name = serializers.CharField()
+
+
 class AuditCycleSerializer(serializers.ModelSerializer):
-    scope_department_name = serializers.CharField(source="scope_department.name", read_only=True)
-    scope_location_name = serializers.CharField(source="scope_location.name", read_only=True)
-    auditor_ids = serializers.PrimaryKeyRelatedField(source="auditors", many=True, read_only=True)
+    scope_department_name = serializers.CharField(
+        source="scope_department.name", read_only=True, default=None
+    )
+    scope_location_name = serializers.CharField(
+        source="scope_location.name", read_only=True, default=None
+    )
+    created_by_name = serializers.CharField(source="created_by.full_name", read_only=True)
+    closed_by_name = serializers.CharField(
+        source="closed_by.full_name", read_only=True, default=None
+    )
+    auditors = serializers.SerializerMethodField()
+    items_total = serializers.IntegerField(read_only=True, required=False)
+    items_pending = serializers.IntegerField(read_only=True, required=False)
+    items_done = serializers.IntegerField(read_only=True, required=False)
+    open_discrepancies = serializers.IntegerField(read_only=True, required=False)
 
     class Meta:
         model = AuditCycle
@@ -24,23 +41,29 @@ class AuditCycleSerializer(serializers.ModelSerializer):
             "starts_on",
             "ends_on",
             "status",
-            "auditor_ids",
+            "auditors",
             "created_by",
+            "created_by_name",
             "closed_by",
+            "closed_by_name",
             "closed_at",
             "created_at",
+            "items_total",
+            "items_pending",
+            "items_done",
+            "open_discrepancies",
         )
-        read_only_fields = (
-            "id",
-            "scope_department_name",
-            "scope_location_name",
-            "status",
-            "auditor_ids",
-            "created_by",
-            "closed_by",
-            "closed_at",
-            "created_at",
-        )
+        read_only_fields = fields
+
+    def get_auditors(self, obj):
+        # Prefetch when list/retrieve uses prefetch_related("auditors").
+        return [
+            {"id": u.id, "full_name": u.full_name or u.email} for u in obj.auditors.all()
+        ]
+
+
+def _active_employee_qs():
+    return User.objects.filter(status=UserStatus.ACTIVE, role=UserRole.EMPLOYEE)
 
 
 class AuditCycleCreateSerializer(serializers.Serializer):
@@ -55,7 +78,7 @@ class AuditCycleCreateSerializer(serializers.Serializer):
     ends_on = serializers.DateField()
     auditor_ids = serializers.PrimaryKeyRelatedField(
         source="auditors",
-        queryset=User.objects.filter(status=UserStatus.ACTIVE),
+        queryset=_active_employee_qs(),
         many=True,
         required=False,
     )
@@ -68,14 +91,24 @@ class AuditCycleCreateSerializer(serializers.Serializer):
 
 class AuditorsUpdateSerializer(serializers.Serializer):
     auditor_ids = serializers.PrimaryKeyRelatedField(
-        source="auditors", queryset=User.objects.filter(status=UserStatus.ACTIVE), many=True
+        source="auditors",
+        queryset=_active_employee_qs(),
+        many=True,
     )
 
 
 class AuditItemSerializer(serializers.ModelSerializer):
     asset_tag = serializers.CharField(source="asset.asset_tag", read_only=True)
     asset_name = serializers.CharField(source="asset.name", read_only=True)
-    verified_by_name = serializers.CharField(source="verified_by.full_name", read_only=True)
+    verified_by_name = serializers.CharField(
+        source="verified_by.full_name", read_only=True, default=None
+    )
+    expected_location_id = serializers.IntegerField(
+        source="asset.location_id", read_only=True, default=None
+    )
+    expected_location_name = serializers.CharField(
+        source="asset.location.name", read_only=True, default=None
+    )
 
     class Meta:
         model = AuditItem
@@ -85,6 +118,8 @@ class AuditItemSerializer(serializers.ModelSerializer):
             "asset",
             "asset_tag",
             "asset_name",
+            "expected_location_id",
+            "expected_location_name",
             "verdict",
             "verified_by",
             "verified_by_name",
@@ -105,6 +140,9 @@ class DiscrepancySerializer(serializers.ModelSerializer):
     asset_tag = serializers.CharField(source="audit_item.asset.asset_tag", read_only=True)
     asset_name = serializers.CharField(source="audit_item.asset.name", read_only=True)
     cycle = serializers.PrimaryKeyRelatedField(source="audit_item.cycle", read_only=True)
+    resolved_by_name = serializers.CharField(
+        source="resolved_by.full_name", read_only=True, default=None
+    )
 
     class Meta:
         model = Discrepancy
@@ -118,6 +156,7 @@ class DiscrepancySerializer(serializers.ModelSerializer):
             "detail",
             "resolved",
             "resolved_by",
+            "resolved_by_name",
             "resolved_at",
             "created_at",
         )

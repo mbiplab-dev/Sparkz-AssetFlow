@@ -25,6 +25,8 @@ export type ResourceAsset = {
   category: number;
   category_name: string;
   total_quantity: number;
+  /** Units still in the manager pool (allocatable). */
+  available_quantity?: number;
   condition: string;
   location: string;
   is_bookable: boolean;

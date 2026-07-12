@@ -1,35 +1,18 @@
 /**
- * Audit API client — the ONLY module UI code should import for audits.
- *
- * Pattern matches `lib/api/assets.ts` / `maintenance.ts`.
- *
- * Backend not shipped yet → `USE_LOCAL_AUDIT_API = true` routes through
- * `audits.local.ts`. When Django exposes `/api/audits/…`:
- *   1. Set USE_LOCAL_AUDIT_API = false
- *   2. Confirm paths match the real routes (TODO markers below)
- *   3. Delete `audits.local.ts`
+ * Audit API client — talks to Django `apps.audits` at `/api/audits/…`.
+ * UI code should import only from this module.
  */
 
 import { authRequest } from "@/lib/api/client";
-import {
-  localCloseCycle,
-  localCreateCycle,
-  localGetCycle,
-  localListCycles,
-  localStartCycle,
-  localUpdateItemVerdict,
-} from "@/lib/api/audits.local";
 import type {
-  ActorRef,
   AuditCycle,
   AuditDiscrepancy,
+  AuditItem,
   AuditVerdict,
   CreateAuditCycleInput,
-  DiscrepancyKind,
 } from "@/lib/api/audits.types";
 
 export type {
-  ActorRef,
   AuditAuditor,
   AuditCycle,
   AuditCycleStatus,
@@ -46,114 +29,117 @@ export {
   VERDICT_LABELS,
 } from "@/lib/api/audits.types";
 
-// ── Flip this when the audits backend is ready ─────────────────────────────
-const USE_LOCAL_AUDIT_API = true;
+const BASE = "/api/audits";
 
-// ── Pure UI helpers (no mock / no network) ─────────────────────────────────
-
-/** Derive discrepancy list from items (until API returns audit_discrepancies). */
-export function discrepanciesFromCycle(cycle: AuditCycle): AuditDiscrepancy[] {
-  return cycle.items
-    .filter((i) => i.verdict === "missing" || i.verdict === "damaged")
-    .map((i) => {
-      const kind: DiscrepancyKind =
-        i.verdict === "damaged"
-          ? "damaged"
-          : /wrong.?loc|not at|misplaced/i.test(i.notes)
-            ? "wrong_location"
-            : "missing";
-      return {
-        id: `disc-${i.id}`,
-        audit_item_id: i.id,
-        asset_tag: i.asset_tag,
-        asset_name: i.asset_name,
-        kind,
-        detail:
-          i.notes ||
-          (kind === "missing"
-            ? "Asset not found in scoped location"
-            : kind === "damaged"
-              ? "Condition issue recorded during audit"
-              : "Asset found outside expected location"),
-        resolved: cycle.status === "closed",
-        resolved_by_name: cycle.status === "closed" ? cycle.closed_by_name : null,
-        resolved_at: cycle.status === "closed" ? cycle.closed_at : null,
-        created_at: i.verified_at || cycle.created_at,
-      };
-    });
+function asList<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  // DRF pagination safety
+  if (data && typeof data === "object" && Array.isArray((data as { results?: unknown }).results)) {
+    return (data as { results: T[] }).results;
+  }
+  return [];
 }
 
 export function scopeLabel(cycle: AuditCycle): string {
-  return [cycle.scope_dept_name, cycle.scope_loc_name].filter(Boolean).join(" · ") || "—";
+  return (
+    [cycle.scope_department_name, cycle.scope_location_name].filter(Boolean).join(" · ") || "—"
+  );
 }
 
-// ── Public API ─────────────────────────────────────────────────────────────
+export function isCycleAuditor(
+  cycle: AuditCycle,
+  userId: string | number | undefined | null,
+): boolean {
+  if (userId === undefined || userId === null || userId === "") return false;
+  const id = Number(userId);
+  if (!Number.isFinite(id)) return false;
+  return cycle.auditors.some((a) => a.id === id);
+}
 
-/** GET /api/audits/cycles/ */
-export async function listAuditCycles(_signal?: AbortSignal): Promise<AuditCycle[]> {
-  if (USE_LOCAL_AUDIT_API) return localListCycles();
-
-  // TODO(api): pass signal when http layer supports it
-  return (await authRequest("/api/audits/cycles/")) as AuditCycle[];
+/** GET /api/audits/cycles/ — backend scopes employees to assigned cycles. */
+export async function listAuditCycles(): Promise<AuditCycle[]> {
+  return asList<AuditCycle>(await authRequest(`${BASE}/cycles/`));
 }
 
 /** GET /api/audits/cycles/:id/ */
-export async function getAuditCycle(id: string): Promise<AuditCycle> {
-  if (USE_LOCAL_AUDIT_API) return localGetCycle(id);
-
-  return (await authRequest(`/api/audits/cycles/${id}/`)) as AuditCycle;
+export async function getAuditCycle(id: number): Promise<AuditCycle> {
+  return (await authRequest(`${BASE}/cycles/${id}/`)) as AuditCycle;
 }
 
-/** POST /api/audits/cycles/ */
-export async function createAuditCycle(
-  input: CreateAuditCycleInput,
-  actor: ActorRef,
+/** POST /api/audits/cycles/ — snapshots in-scope assets as pending items. */
+export async function createAuditCycle(input: CreateAuditCycleInput): Promise<AuditCycle> {
+  return (await authRequest(`${BASE}/cycles/`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      scope_department: input.scope_department,
+      scope_location: input.scope_location,
+      starts_on: input.starts_on,
+      ends_on: input.ends_on,
+      auditor_ids: input.auditor_ids,
+    }),
+  })) as AuditCycle;
+}
+
+/** POST /api/audits/cycles/:id/close/ — locks cycle; missing→lost, damaged→condition. */
+export async function closeAuditCycle(id: number): Promise<AuditCycle> {
+  return (await authRequest(`${BASE}/cycles/${id}/close/`, {
+    method: "POST",
+  })) as AuditCycle;
+}
+
+/** POST /api/audits/cycles/:id/auditors/ — replace full auditor list (employees only). */
+export async function setCycleAuditors(
+  cycleId: number,
+  auditorIds: number[],
 ): Promise<AuditCycle> {
-  if (USE_LOCAL_AUDIT_API) return localCreateCycle(input, actor);
-
-  return (await authRequest("/api/audits/cycles/", {
+  return (await authRequest(`${BASE}/cycles/${cycleId}/auditors/`, {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ auditor_ids: auditorIds }),
   })) as AuditCycle;
 }
 
-/** POST /api/audits/cycles/:id/start/ */
-export async function startAuditCycle(id: string): Promise<AuditCycle> {
-  if (USE_LOCAL_AUDIT_API) return localStartCycle(id);
-
-  return (await authRequest(`/api/audits/cycles/${id}/start/`, {
-    method: "POST",
-  })) as AuditCycle;
+/** GET /api/audits/items/?cycle= */
+export async function listAuditItems(cycleId: number): Promise<AuditItem[]> {
+  return asList<AuditItem>(
+    await authRequest(`${BASE}/items/?cycle=${encodeURIComponent(String(cycleId))}`),
+  );
 }
 
-/** POST /api/audits/cycles/:id/close/ */
-export async function closeAuditCycle(id: string, actor: ActorRef): Promise<AuditCycle> {
-  if (USE_LOCAL_AUDIT_API) return localCloseCycle(id, actor);
-
-  return (await authRequest(`/api/audits/cycles/${id}/close/`, {
-    method: "POST",
-  })) as AuditCycle;
-}
-
-/** PATCH /api/audits/cycles/:cycleId/items/:itemId/ */
+/**
+ * PATCH /api/audits/items/:id/verdict/
+ * Verdict must be verified | missing | damaged (not pending).
+ */
 export async function updateAuditItemVerdict(
-  cycleId: string,
-  itemId: string,
-  verdict: AuditVerdict,
-  notes: string | undefined,
-  actor: ActorRef,
-): Promise<AuditCycle> {
-  if (USE_LOCAL_AUDIT_API) {
-    return localUpdateItemVerdict(cycleId, itemId, verdict, notes, actor);
-  }
-
-  return (await authRequest(`/api/audits/cycles/${cycleId}/items/${itemId}/`, {
+  itemId: number,
+  verdict: Exclude<AuditVerdict, "pending">,
+  notes?: string,
+): Promise<AuditItem> {
+  return (await authRequest(`${BASE}/items/${itemId}/verdict/`, {
     method: "PATCH",
-    body: JSON.stringify({ verdict, notes }),
-  })) as AuditCycle;
+    body: JSON.stringify({
+      verdict,
+      notes: notes ?? "",
+    }),
+  })) as AuditItem;
 }
 
-/** True while the local stand-in is active (small UI footnote only). */
-export function isAuditApiLocal(): boolean {
-  return USE_LOCAL_AUDIT_API;
+/** GET /api/audits/discrepancies/?cycle=&resolved= */
+export async function listDiscrepancies(params?: {
+  cycle?: number;
+  resolved?: boolean;
+}): Promise<AuditDiscrepancy[]> {
+  const search = new URLSearchParams();
+  if (params?.cycle != null) search.set("cycle", String(params.cycle));
+  if (params?.resolved != null) search.set("resolved", params.resolved ? "true" : "false");
+  const qs = search.toString();
+  const url = qs ? `${BASE}/discrepancies/?${qs}` : `${BASE}/discrepancies/`;
+  return asList<AuditDiscrepancy>(await authRequest(url));
+}
+
+/** POST /api/audits/discrepancies/:id/resolve/ */
+export async function resolveDiscrepancy(id: number): Promise<AuditDiscrepancy> {
+  return (await authRequest(`${BASE}/discrepancies/${id}/resolve/`, {
+    method: "POST",
+  })) as AuditDiscrepancy;
 }

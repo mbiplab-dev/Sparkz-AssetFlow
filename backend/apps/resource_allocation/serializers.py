@@ -5,6 +5,8 @@ from .models import AllocationRequest, Asset, HolderType, Holding, Transfer
 
 class AssetSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
+    # Unallocated quantity sitting in the manager pool (what allocate can pull).
+    available_quantity = serializers.SerializerMethodField()
 
     class Meta:
         model = Asset
@@ -14,6 +16,7 @@ class AssetSerializer(serializers.ModelSerializer):
             "category",
             "category_name",
             "total_quantity",
+            "available_quantity",
             "condition",
             "location",
             "is_bookable",
@@ -21,7 +24,28 @@ class AssetSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "category_name", "created_by", "created_at", "updated_at")
+        read_only_fields = (
+            "id",
+            "category_name",
+            "available_quantity",
+            "created_by",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_available_quantity(self, obj):
+        from .models import MANAGER_HOLDER_ID, HolderType, Holding
+
+        holding = (
+            Holding.objects.filter(
+                asset=obj,
+                holder_type=HolderType.MANAGER,
+                holder_id=MANAGER_HOLDER_ID,
+            )
+            .only("quantity")
+            .first()
+        )
+        return holding.quantity if holding else 0
 
     def validate_name(self, value):
         value = value.strip()

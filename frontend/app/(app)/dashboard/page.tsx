@@ -124,7 +124,7 @@ export default function DashboardPage() {
         </SectionReveal>
       )}
 
-      <KpiGrid kpis={kpis} />
+      <KpiGrid kpis={kpis} role={role} />
 
       <SectionReveal delay={160}>
         <QuickActions pendingTransfers={summary?.kpis.pending_transfers ?? 0} />

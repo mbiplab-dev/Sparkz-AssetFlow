@@ -113,7 +113,8 @@ class AuditApiTests(APITestCase):
         response = self.client.patch(
             f"/api/audits/items/{item.id}/verdict/", {"verdict": "verified"}
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Scoped queryset hides foreign cycles (404) before the verdict permission check (403).
+        self.assertIn(response.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND))
 
     def test_verdict_rejected_after_cycle_closed(self):
         cycle = services.create_cycle(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -41,46 +41,96 @@ import { useAuth } from "@/context/AuthContext";
 import {
   closeAuditCycle,
   createAuditCycle,
-  discrepanciesFromCycle,
-  isAuditApiLocal,
+  isCycleAuditor,
   listAuditCycles,
+  listAuditItems,
+  listDiscrepancies,
+  resolveDiscrepancy,
   scopeLabel,
-  startAuditCycle,
   updateAuditItemVerdict,
   type AuditCycle,
   type AuditCycleStatus,
+  type AuditDiscrepancy,
+  type AuditItem,
   type AuditVerdict,
 } from "@/lib/api/audits";
+import { ApiError } from "@/lib/api/http";
 import { useCan } from "@/lib/auth/permissions";
 import { RoleGate } from "@/components/rbac/RoleGate";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { cn } from "@/lib/utils";
 
 /**
- * Asset Audit UI. All data goes through `@/lib/api/audits` — never mock modules.
- * When the backend is ready, only that API file changes.
+ * Asset Audit — wired to Django `apps.audits`.
+ * Managers create/close cycles & resolve discrepancies.
+ * Assigned employees record verdicts on open cycles.
  */
 export default function AuditPage() {
   const { user } = useAuth();
   const canManage = useCan("audit.manage");
+  const userId = user?.id;
 
   const {
     data: cycles,
     loading,
     error,
     reload,
-  } = useAsyncList<AuditCycle[]>((signal) => listAuditCycles(signal), []);
+  } = useAsyncList<AuditCycle[]>(() => listAuditCycles(), [canManage, userId]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AuditCycleStatus>("all");
   const [createOpen, setCreateOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [actionPending, setActionPending] = useState(false);
+
+  const [detailItems, setDetailItems] = useState<AuditItem[]>([]);
+  const [detailDiscrepancies, setDetailDiscrepancies] = useState<AuditDiscrepancy[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const selected = useMemo(
     () => (cycles ?? []).find((c) => c.id === selectedId) ?? null,
     [cycles, selectedId],
   );
+
+  const selectedCanAudit =
+    !!selected &&
+    selected.status === "open" &&
+    (canManage || isCycleAuditor(selected, userId));
+
+  const loadDetail = useCallback(async (cycleId: number) => {
+    setDetailLoading(true);
+    try {
+      const [items, discs] = await Promise.all([
+        listAuditItems(cycleId),
+        listDiscrepancies({ cycle: cycleId }),
+      ]);
+      setDetailItems(items);
+      setDetailDiscrepancies(discs);
+    } catch (err) {
+      toast.error("Failed to load cycle details", {
+        description: err instanceof ApiError ? err.message : undefined,
+      });
+      setDetailItems([]);
+      setDetailDiscrepancies([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  function openCycle(id: number) {
+    setDetailItems([]);
+    setDetailDiscrepancies([]);
+    setSelectedId(id);
+    void loadDetail(id);
+  }
+
+  function closeSheet(open: boolean) {
+    if (!open) {
+      setSelectedId(null);
+      setDetailItems([]);
+      setDetailDiscrepancies([]);
+    }
+  }
 
   const filtered = useMemo(() => {
     const list = cycles ?? [];
@@ -90,8 +140,8 @@ export default function AuditPage() {
       if (!q) return true;
       const hay = [
         c.name,
-        c.scope_dept_name,
-        c.scope_loc_name,
+        c.scope_department_name,
+        c.scope_location_name,
         ...c.auditors.map((a) => a.full_name),
       ]
         .filter(Boolean)
@@ -102,75 +152,81 @@ export default function AuditPage() {
   }, [cycles, search, statusFilter]);
 
   const stats = useMemo(() => {
-    let active = 0;
+    let open = 0;
     let pendingItems = 0;
     let openDiscrepancies = 0;
     let closed = 0;
     for (const c of cycles ?? []) {
-      if (c.status === "in_progress") active++;
+      if (c.status === "open") open++;
       if (c.status === "closed") closed++;
-      if (c.status !== "closed") {
-        pendingItems += c.items.filter((i) => i.verdict === "pending").length;
-        openDiscrepancies += discrepanciesFromCycle(c).filter((d) => !d.resolved).length;
-      }
+      pendingItems += c.items_pending ?? 0;
+      openDiscrepancies += c.open_discrepancies ?? 0;
     }
-    return { active, pendingItems, openDiscrepancies, closed };
+    return { open, pendingItems, openDiscrepancies, closed };
   }, [cycles]);
-
-  function actor() {
-    return {
-      id: String(user?.id ?? "local"),
-      name: user?.full_name || user?.email || "You",
-    };
-  }
 
   async function handleCreate(input: CreateCycleFormInput) {
     setActionPending(true);
     try {
-      const created = await createAuditCycle(input, actor());
-      toast.success("Draft cycle created");
-      setSelectedId(created.id);
+      const created = await createAuditCycle(input);
+      toast.success("Audit cycle created", {
+        description: "In-scope assets were snapshotted as pending items.",
+      });
+      openCycle(created.id);
       reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create cycle");
+      toast.error(err instanceof ApiError ? err.message : "Failed to create cycle");
+      throw err;
     } finally {
       setActionPending(false);
     }
   }
 
-  async function handleStart(cycleId: string) {
+  async function handleClose(cycleId: number) {
     setActionPending(true);
     try {
-      await startAuditCycle(cycleId);
-      toast.success("Cycle started");
+      await closeAuditCycle(cycleId);
+      toast.success("Cycle closed", {
+        description: "Missing assets marked lost; damaged assets updated.",
+      });
       reload();
+      await loadDetail(cycleId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start cycle");
+      toast.error(err instanceof ApiError ? err.message : "Failed to close cycle");
     } finally {
       setActionPending(false);
     }
   }
 
-  async function handleClose(cycleId: string) {
+  async function handleUpdateVerdict(
+    itemId: number,
+    verdict: Exclude<AuditVerdict, "pending">,
+    notes?: string,
+  ) {
+    try {
+      const updated = await updateAuditItemVerdict(itemId, verdict, notes);
+      setDetailItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      if (selectedId != null) {
+        const discs = await listDiscrepancies({ cycle: selectedId });
+        setDetailDiscrepancies(discs);
+      }
+      reload();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to update item");
+    }
+  }
+
+  async function handleResolveDiscrepancy(id: number) {
     setActionPending(true);
     try {
-      await closeAuditCycle(cycleId, actor());
-      toast.success("Cycle closed");
+      const updated = await resolveDiscrepancy(id);
+      setDetailDiscrepancies((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+      toast.success("Discrepancy resolved");
       reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to close cycle");
+      toast.error(err instanceof ApiError ? err.message : "Failed to resolve");
     } finally {
       setActionPending(false);
-    }
-  }
-
-  async function handleUpdateVerdict(itemId: string, verdict: AuditVerdict, notes?: string) {
-    if (!selectedId) return;
-    try {
-      await updateAuditItemVerdict(selectedId, itemId, verdict, notes, actor());
-      reload();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update item");
     }
   }
 
@@ -178,244 +234,246 @@ export default function AuditPage() {
     <RoleGate
       capability="audit.view"
       title="You don't have access to Audits"
-      description="Audit cycles are available to administrators and asset managers."
+      description="Managers create audit cycles and assign employees as auditors. Assigned auditors can open this page to verify assets."
     >
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <div className="mb-1 flex items-center gap-2.5">
-            <span className="bg-primary/10 flex size-9 shrink-0 items-center justify-center rounded-lg">
-              <ClipboardCheck className="text-primary size-5" />
-            </span>
-            <h2 className="font-display text-ink text-xl font-bold tracking-tight sm:text-2xl">
-              Asset Audit
-            </h2>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2.5">
+              <span className="bg-primary/10 flex size-9 shrink-0 items-center justify-center rounded-lg">
+                <ClipboardCheck className="text-primary size-5" />
+              </span>
+              <h2 className="font-display text-ink text-xl font-bold tracking-tight sm:text-2xl">
+                {canManage ? "Asset Audit" : "My audit assignments"}
+              </h2>
+            </div>
+            <p className="text-ink-muted max-w-2xl text-sm">
+              {canManage
+                ? "Create open verification cycles scoped by department/location, assign employee auditors, record verdicts, resolve discrepancies, then close to apply lost/damaged to assets."
+                : "Cycles where you are assigned as auditor. Open a cycle to mark each asset verified, missing, or damaged."}
+            </p>
           </div>
-          <p className="text-ink-muted max-w-2xl text-sm">
-            Structured verification cycles: scope department/location, assign auditors, mark each
-            asset verified / missing / damaged, auto-build discrepancy reports, then close the
-            cycle.
-          </p>
-        </div>
-        {canManage && (
-          <Button
-            onClick={() => setCreateOpen(true)}
-            disabled={actionPending}
-            className="w-full shrink-0 rounded-full sm:w-auto"
-          >
-            <Plus />
-            New cycle
-          </Button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        <StatCard label="Active cycles" value={stats.active} icon={ClipboardList} tint="primary" />
-        <StatCard label="Items pending" value={stats.pendingItems} icon={Search} tint="sky" />
-        <StatCard
-          label="Open discrepancies"
-          value={stats.openDiscrepancies}
-          icon={AlertTriangle}
-          tint="orange"
-          emphasize={stats.openDiscrepancies > 0}
-        />
-        <StatCard label="Closed cycles" value={stats.closed} icon={CheckCircle2} tint="green" />
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
-        <div className="relative min-w-0 sm:col-span-2 lg:min-w-[16rem] lg:flex-1">
-          <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search cycles, scope, or auditors…"
-            className="w-full rounded-xs pl-8"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as "all" | AuditCycleStatus)}
-        >
-          <SelectTrigger className="w-full rounded-xs lg:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="in_progress">In progress</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
-
-      <Card className="overflow-hidden py-0">
-        <CardContent className="px-0">
-          {loading ? (
-            <div className="flex flex-col gap-3 p-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-canvas-soft/80 hover:bg-canvas-soft/80">
-                    <TableHead className="text-ink-muted pl-4 text-xs font-semibold tracking-wide uppercase">
-                      Cycle
-                    </TableHead>
-                    <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
-                      Scope
-                    </TableHead>
-                    <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
-                      Window
-                    </TableHead>
-                    <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
-                      Status
-                    </TableHead>
-                    <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
-                      Progress
-                    </TableHead>
-                    <TableHead className="text-ink-muted pr-4 text-xs font-semibold tracking-wide uppercase">
-                      Flags
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-36 text-center">
-                        <div className="flex flex-col items-center gap-2 py-6">
-                          <span className="bg-primary/10 flex size-11 items-center justify-center rounded-xl">
-                            <ClipboardCheck className="text-primary size-5" />
-                          </span>
-                          <p className="text-ink-secondary text-sm font-medium">No cycles found</p>
-                          <p className="text-ink-muted max-w-sm text-sm">
-                            {canManage
-                              ? "Create a draft cycle scoped by department or location to begin."
-                              : "No cycles match your filters."}
-                          </p>
-                          {canManage && (
-                            <Button
-                              variant="outline"
-                              className="mt-1 rounded-full"
-                              onClick={() => setCreateOpen(true)}
-                            >
-                              <Plus />
-                              New cycle
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filtered.map((cycle) => {
-                      const done = cycle.items.filter((i) => i.verdict !== "pending").length;
-                      const total = cycle.items.length;
-                      const disc = discrepanciesFromCycle(cycle).length;
-                      return (
-                        <TableRow
-                          key={cycle.id}
-                          className="hover:bg-muted/40 cursor-pointer"
-                          onClick={() => setSelectedId(cycle.id)}
-                        >
-                          <TableCell className="pl-4">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-ink text-sm font-medium">{cycle.name}</span>
-                              <span className="text-ink-faint text-xs">
-                                {cycle.auditors.length} auditor
-                                {cycle.auditors.length === 1 ? "" : "s"} · {cycle.created_by_name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-ink-muted text-sm">
-                            {scopeLabel(cycle)}
-                          </TableCell>
-                          <TableCell className="text-ink-muted whitespace-nowrap text-sm">
-                            {cycle.starts_on} → {cycle.ends_on}
-                          </TableCell>
-                          <TableCell>
-                            <CycleStatusBadge status={cycle.status} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex min-w-[104px] flex-col gap-1">
-                              <div className="bg-muted h-1.5 overflow-hidden rounded-full">
-                                <div
-                                  className={cn(
-                                    "h-full rounded-full transition-all",
-                                    cycle.status === "closed" ? "bg-accent-green" : "bg-primary",
-                                  )}
-                                  style={{
-                                    width:
-                                      total === 0
-                                        ? "0%"
-                                        : `${Math.round((done / total) * 100)}%`,
-                                  }}
-                                />
-                              </div>
-                              <span className="text-ink-faint text-xs tabular-nums">
-                                {total === 0 ? "No items" : `${done}/${total}`}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="pr-4">
-                            {disc > 0 ? (
-                              <span className="text-accent-orange inline-flex items-center gap-1 text-xs font-medium">
-                                <AlertTriangle className="size-3.5" />
-                                {disc}
-                              </span>
-                            ) : (
-                              <span className="text-ink-faint text-xs">—</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+          {canManage && (
+            <Button
+              onClick={() => setCreateOpen(true)}
+              disabled={actionPending}
+              className="w-full shrink-0 rounded-full sm:w-auto"
+            >
+              <Plus />
+              New cycle
+            </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {!canManage && (
-        <p className="text-ink-muted text-center text-xs">
-          View only. Creating, starting, and closing cycles requires Asset Manager or Admin.
-        </p>
-      )}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          <StatCard label="Open cycles" value={stats.open} icon={ClipboardList} tint="primary" />
+          <StatCard label="Items pending" value={stats.pendingItems} icon={Search} tint="sky" />
+          <StatCard
+            label="Open discrepancies"
+            value={stats.openDiscrepancies}
+            icon={AlertTriangle}
+            tint="orange"
+            emphasize={stats.openDiscrepancies > 0}
+          />
+          <StatCard label="Closed cycles" value={stats.closed} icon={CheckCircle2} tint="green" />
+        </div>
 
-      {isAuditApiLocal() && (
-        <p className="text-ink-faint text-center text-[11px]">
-          Using local audit data stand-in (`lib/api/audits.ts` → USE_LOCAL_AUDIT_API). Flip that flag
-          when the backend is ready — UI stays the same.
-        </p>
-      )}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+          <div className="relative min-w-0 sm:col-span-2 lg:min-w-[16rem] lg:flex-1">
+            <Search className="text-ink-faint absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search cycles, scope, or auditors…"
+              className="w-full rounded-xs pl-8"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as "all" | AuditCycleStatus)}
+          >
+            <SelectTrigger className="w-full rounded-xs lg:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <CreateCycleDialog open={createOpen} onOpenChange={setCreateOpen} onCreate={handleCreate} />
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {error}
+          </p>
+        )}
 
-      <CycleDetailSheet
-        cycle={selected}
-        open={!!selected}
-        onOpenChange={(open) => {
-          if (!open) setSelectedId(null);
-        }}
-        canManage={canManage}
-        busy={actionPending}
-        onUpdateVerdict={handleUpdateVerdict}
-        onStart={handleStart}
-        onClose={handleClose}
-      />
-    </div>
+        <Card className="overflow-hidden py-0">
+          <CardContent className="px-0">
+            {loading ? (
+              <div className="flex flex-col gap-3 p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-canvas-soft/80 hover:bg-canvas-soft/80">
+                      <TableHead className="text-ink-muted pl-4 text-xs font-semibold tracking-wide uppercase">
+                        Cycle
+                      </TableHead>
+                      <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+                        Scope
+                      </TableHead>
+                      <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+                        Window
+                      </TableHead>
+                      <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+                        Status
+                      </TableHead>
+                      <TableHead className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+                        Progress
+                      </TableHead>
+                      <TableHead className="text-ink-muted pr-4 text-xs font-semibold tracking-wide uppercase">
+                        Flags
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-36 text-center">
+                          <div className="flex flex-col items-center gap-2 py-6">
+                            <span className="bg-primary/10 flex size-11 items-center justify-center rounded-xl">
+                              <ClipboardCheck className="text-primary size-5" />
+                            </span>
+                            <p className="text-ink-secondary text-sm font-medium">
+                              No cycles found
+                            </p>
+                            <p className="text-ink-muted max-w-sm text-sm">
+                              {canManage
+                                ? "Create a cycle scoped by department or location to begin."
+                                : (cycles ?? []).length === 0
+                                  ? "You have no audit assignments yet. An asset manager must assign you as an auditor when creating a cycle."
+                                  : "No cycles match your filters."}
+                            </p>
+                            {canManage && (
+                              <Button
+                                variant="outline"
+                                className="mt-1 rounded-full"
+                                onClick={() => setCreateOpen(true)}
+                              >
+                                <Plus />
+                                New cycle
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filtered.map((cycle) => {
+                        const done = cycle.items_done ?? 0;
+                        const total = cycle.items_total ?? 0;
+                        const disc = cycle.open_discrepancies ?? 0;
+                        return (
+                          <TableRow
+                            key={cycle.id}
+                            className="hover:bg-muted/40 cursor-pointer"
+                            onClick={() => openCycle(cycle.id)}
+                          >
+                            <TableCell className="pl-4">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-ink text-sm font-medium">{cycle.name}</span>
+                                <span className="text-ink-faint text-xs">
+                                  {cycle.auditors.length} auditor
+                                  {cycle.auditors.length === 1 ? "" : "s"} ·{" "}
+                                  {cycle.created_by_name}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-ink-muted text-sm">
+                              {scopeLabel(cycle)}
+                            </TableCell>
+                            <TableCell className="text-ink-muted whitespace-nowrap text-sm">
+                              {cycle.starts_on} → {cycle.ends_on}
+                            </TableCell>
+                            <TableCell>
+                              <CycleStatusBadge status={cycle.status} />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex min-w-[104px] flex-col gap-1">
+                                <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                                  <div
+                                    className={cn(
+                                      "h-full rounded-full transition-all",
+                                      cycle.status === "closed"
+                                        ? "bg-accent-green"
+                                        : "bg-primary",
+                                    )}
+                                    style={{
+                                      width:
+                                        total === 0
+                                          ? "0%"
+                                          : `${Math.round((done / total) * 100)}%`,
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-ink-faint text-xs tabular-nums">
+                                  {total === 0 ? "No items" : `${done}/${total}`}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="pr-4">
+                              {disc > 0 ? (
+                                <span className="text-accent-orange inline-flex items-center gap-1 text-xs font-medium">
+                                  <AlertTriangle className="size-3.5" />
+                                  {disc}
+                                </span>
+                              ) : (
+                                <span className="text-ink-faint text-xs">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {!canManage && (
+          <p className="text-ink-muted text-center text-xs">
+            You can record verdicts on open cycles assigned to you. Creating and closing cycles
+            requires Asset Manager or Admin.
+          </p>
+        )}
+
+        <CreateCycleDialog open={createOpen} onOpenChange={setCreateOpen} onCreate={handleCreate} />
+
+        <CycleDetailSheet
+          cycle={selected}
+          items={detailItems}
+          discrepancies={detailDiscrepancies}
+          itemsLoading={detailLoading}
+          open={selectedId != null}
+          onOpenChange={closeSheet}
+          canManage={canManage}
+          canAuditItems={selectedCanAudit}
+          busy={actionPending}
+          onUpdateVerdict={handleUpdateVerdict}
+          onClose={handleClose}
+          onResolveDiscrepancy={canManage ? handleResolveDiscrepancy : undefined}
+        />
+      </div>
     </RoleGate>
   );
 }

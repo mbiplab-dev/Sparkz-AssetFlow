@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptySelectOptions } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -132,17 +133,18 @@ export default function AllocationPage() {
   const { data, loading, setData, reload } = useAsyncList<Bundle>(
     () =>
       Promise.all([
-        listHoldings(),
-        listResourceAssets(),
-        listTransfers(),
-        listDepartments({ status: "active" }),
-        listEmployees({ status: "active" }),
+        listHoldings().catch(() => [] as Holding[]),
+        listResourceAssets().catch(() => [] as ResourceAsset[]),
+        listTransfers().catch(() => [] as Transfer[]),
+        // Soft-fail so missing read perms never blank the whole allocation screen.
+        listDepartments({ status: "active" }).catch(() => [] as Department[]),
+        listEmployees({ status: "active" }).catch(() => [] as Employee[]),
       ]).then<Bundle>(([holdings, assets, transfers, departments, employees]) => ({
-        holdings,
-        assets,
-        transfers,
-        departments,
-        employees,
+        holdings: Array.isArray(holdings) ? holdings : [],
+        assets: Array.isArray(assets) ? assets : [],
+        transfers: Array.isArray(transfers) ? transfers : [],
+        departments: Array.isArray(departments) ? departments : [],
+        employees: Array.isArray(employees) ? employees : [],
       })),
     [],
   );
@@ -334,6 +336,8 @@ export default function AllocationPage() {
   // optimistic updates without a full reload.
   void setData;
 
+  const isEmployee = user?.role === "employee";
+
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div className="flex flex-col gap-1">
@@ -341,11 +345,14 @@ export default function AllocationPage() {
           <span className="bg-accent-sky/15 flex size-9 items-center justify-center rounded-xl">
             <ArrowLeftRight className="text-accent-sky size-4" />
           </span>
-          <h1 className="text-ink text-xl font-semibold">Allocation & Transfer</h1>
+          <h1 className="text-ink text-xl font-semibold">
+            {isEmployee ? "My allocations" : "Allocation & Transfer"}
+          </h1>
         </div>
         <p className="text-ink-muted text-sm">
-          Track current holdings, allocate assets to employees or departments, and process
-          returns.
+          {isEmployee
+            ? "Assets currently assigned to you. Return items when you no longer need them, or raise maintenance if something is broken."
+            : "Track current holdings, allocate assets to employees or departments, and process returns."}
         </p>
       </div>
 
@@ -383,17 +390,26 @@ export default function AllocationPage() {
               <span className="bg-accent-sky/15 flex size-11 items-center justify-center rounded-xl">
                 <Package className="text-accent-sky size-5" />
               </span>
-              <p className="text-ink-secondary text-sm font-medium">No current holdings</p>
-              <p className="text-ink-muted text-sm">
+              <p className="text-ink-secondary text-sm font-medium">
+                {isEmployee ? "No assets allocated to you" : "No current holdings"}
+              </p>
+              <p className="text-ink-muted max-w-sm text-sm">
                 {activeHoldings.length === 0
-                  ? "Nothing has been allocated yet."
+                  ? isEmployee
+                    ? "When an asset manager allocates equipment to you, it will appear here so you can return it when finished."
+                    : "Nothing has been allocated yet. Allocate an asset or create assets first."
                   : "No holdings match your search."}
               </p>
               {showAllocateButton && activeHoldings.length === 0 && (
-                <Button onClick={openAllocate} variant="outline" className="mt-1 rounded-full">
-                  <Plus />
-                  {canAllocate ? "Allocate asset" : "Request allocation"}
-                </Button>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+                  <Button onClick={openAllocate} variant="outline" className="rounded-full">
+                    <Plus />
+                    {canAllocate ? "Allocate asset" : "Request allocation"}
+                  </Button>
+                  <Button asChild variant="ghost" className="rounded-full">
+                    <a href="/assets">Go to Assets</a>
+                  </Button>
+                </div>
               )}
             </div>
           ) : (
@@ -494,13 +510,35 @@ export default function AllocationPage() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select an asset" />
                 </SelectTrigger>
-                <SelectContent>
-                  {assets.map((a) => (
-                    <SelectItem key={a.id} value={String(a.id)}>
-                      {a.name}
-                      <span className="text-ink-faint ml-2 text-xs">({a.category_name})</span>
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-72">
+                  {assets.length === 0 ? (
+                    <EmptySelectOptions
+                      title="No assets found"
+                      description="Register assets before allocating them."
+                      actionHref="/assets"
+                      actionLabel="Create assets →"
+                    />
+                  ) : (
+                    // Managers/admins get the full resource pool (synced from
+                    // the main asset directory on list). Show available stock.
+                    [...assets]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((a) => {
+                        const avail =
+                          typeof a.available_quantity === "number"
+                            ? a.available_quantity
+                            : a.total_quantity;
+                        return (
+                          <SelectItem key={a.id} value={String(a.id)}>
+                            <span className="font-medium">{a.name}</span>
+                            <span className="text-ink-faint ml-2 text-xs">
+                              {a.category_name}
+                              {typeof avail === "number" ? ` · avail ${avail}` : ""}
+                            </span>
+                          </SelectItem>
+                        );
+                      })
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -539,8 +577,14 @@ export default function AllocationPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {allocateForm.to_holder_type === "employee"
-                    ? employees.map((e) => (
+                  {allocateForm.to_holder_type === "employee" ? (
+                    employees.length === 0 ? (
+                      <EmptySelectOptions
+                        title="No employees found"
+                        description="People appear after they sign up."
+                      />
+                    ) : (
+                      employees.map((e) => (
                         <SelectItem key={e.id} value={String(e.id)}>
                           {e.full_name}
                           {e.department_name && (
@@ -550,11 +594,21 @@ export default function AllocationPage() {
                           )}
                         </SelectItem>
                       ))
-                    : departments.map((d) => (
-                        <SelectItem key={d.id} value={String(d.id)}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
+                    )
+                  ) : departments.length === 0 ? (
+                    <EmptySelectOptions
+                      title="No departments found"
+                      description="Create departments in Organization setup."
+                      actionHref="/organization"
+                      actionLabel="Create a department →"
+                    />
+                  ) : (
+                    departments.map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>
+                        {d.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -714,32 +768,52 @@ export default function AllocationPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {transferForm.to_holder_type === "employee"
-                    ? employees
-                        .filter(
+                    ? (() => {
+                        const list = employees.filter(
                           (e) =>
                             !(
                               transferTarget?.holder_type === "employee" &&
                               transferTarget.holder_id === e.id
                             ),
-                        )
-                        .map((e) => (
+                        );
+                        if (list.length === 0) {
+                          return (
+                            <EmptySelectOptions
+                              title="No other employees"
+                              description="No eligible employees to transfer to."
+                            />
+                          );
+                        }
+                        return list.map((e) => (
                           <SelectItem key={e.id} value={String(e.id)}>
                             {e.full_name}
                           </SelectItem>
-                        ))
-                    : departments
-                        .filter(
+                        ));
+                      })()
+                    : (() => {
+                        const list = departments.filter(
                           (d) =>
                             !(
                               transferTarget?.holder_type === "department" &&
                               transferTarget.holder_id === d.id
                             ),
-                        )
-                        .map((d) => (
+                        );
+                        if (list.length === 0) {
+                          return (
+                            <EmptySelectOptions
+                              title="No other departments"
+                              description="No eligible departments to transfer to."
+                              actionHref="/organization"
+                              actionLabel="Create a department →"
+                            />
+                          );
+                        }
+                        return list.map((d) => (
                           <SelectItem key={d.id} value={String(d.id)}>
                             {d.name}
                           </SelectItem>
-                        ))}
+                        ));
+                      })()}
                 </SelectContent>
               </Select>
             </div>

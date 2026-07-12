@@ -5,10 +5,10 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.authentication.models import User, UserStatus
+from apps.authentication.models import User, UserRole, UserStatus
 
 from .models import AssetCategory, Department, Status
-from .permissions import IsAdmin
+from .permissions import CanReadEmployees, IsAdmin, IsAdminOrReadOnly
 from .serializers import (
     AssetCategorySerializer,
     DepartmentSerializer,
@@ -35,18 +35,22 @@ from .serializers import (
 )
 class DepartmentViewSet(viewsets.ModelViewSet):
     """
-    CRUD for departments (Screen 3 Tab A). Admin-only.
+    Departments master data.
 
-    - DELETE soft-deactivates (status='inactive') rather than removing the row,
-      because departments are referenced by users/assets/audits.
+    - list / retrieve: any authenticated user (needed by managers for pickers)
+    - create / update / destroy: admin only
     """
 
     queryset = Department.objects.select_related("parent", "head").all()
     serializer_class = DepartmentSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        # Non-admins only need active departments in pickers.
+        if getattr(user, "role", None) != UserRole.ADMIN:
+            qs = qs.filter(status=Status.ACTIVE)
         search = self.request.query_params.get("search")
         status_filter = self.request.query_params.get("status")
         if search:
@@ -73,14 +77,22 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     ),
 )
 class AssetCategoryViewSet(viewsets.ModelViewSet):
-    """CRUD for asset categories (Screen 3 Tab B). Admin-only."""
+    """
+    Asset categories.
+
+    - list / retrieve: any authenticated user (asset registration pickers)
+    - write: admin only
+    """
 
     queryset = AssetCategory.objects.all()
     serializer_class = AssetCategorySerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        if getattr(user, "role", None) != UserRole.ADMIN:
+            qs = qs.filter(status=Status.ACTIVE)
         search = self.request.query_params.get("search")
         status_filter = self.request.query_params.get("status")
         if search:
@@ -100,28 +112,37 @@ class AssetCategoryViewSet(viewsets.ModelViewSet):
 )
 class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Employee directory (Screen 3 Tab C). Admin-only.
+    Employee directory.
 
-    - list / retrieve: read employees
-    - PATCH /employees/{id}/role/       -> promote/demote (the only place role is set)
-    - PATCH /employees/{id}/status/     -> activate/deactivate
-    - PATCH /employees/{id}/department/ -> assign a department
+    - list / retrieve: authenticated; scoped by role in get_queryset
+    - PATCH role / status / department: admin only (IsAdmin on those actions)
     """
 
     queryset = User.objects.select_related("department").all()
     serializer_class = EmployeeSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, CanReadEmployees]
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        role = getattr(user, "role", None)
+
+        # Employees only see themselves on the directory API.
+        if role == UserRole.EMPLOYEE:
+            qs = qs.filter(pk=user.pk)
+        # Managers / heads / admin see the full directory (active by default for
+        # non-admin unless status= is passed).
+        elif role != UserRole.ADMIN:
+            qs = qs.filter(status=UserStatus.ACTIVE, is_active=True)
+
         search = self.request.query_params.get("search")
-        role = self.request.query_params.get("role")
+        role_filter = self.request.query_params.get("role")
         department = self.request.query_params.get("department")
         status_filter = self.request.query_params.get("status")
         if search:
             qs = qs.filter(Q(full_name__icontains=search) | Q(email__icontains=search))
-        if role:
-            qs = qs.filter(role=role)
+        if role_filter:
+            qs = qs.filter(role=role_filter)
         if department:
             qs = qs.filter(department_id=department)
         if status_filter in (UserStatus.ACTIVE, UserStatus.INACTIVE):
@@ -134,7 +155,12 @@ class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
         request=EmployeeRoleUpdateSerializer,
         responses=EmployeeSerializer,
     )
-    @action(detail=True, methods=["patch"], url_path="role")
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="role",
+        permission_classes=[IsAuthenticated, IsAdmin],
+    )
     def set_role(self, request, pk=None):
         user = self.get_object()
         if user == request.user:
@@ -174,7 +200,12 @@ class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
         request=EmployeeStatusUpdateSerializer,
         responses=EmployeeSerializer,
     )
-    @action(detail=True, methods=["patch"], url_path="status")
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="status",
+        permission_classes=[IsAuthenticated, IsAdmin],
+    )
     def set_status(self, request, pk=None):
         user = self.get_object()
         if user == request.user:
@@ -196,7 +227,12 @@ class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
         request=EmployeeDepartmentUpdateSerializer,
         responses=EmployeeSerializer,
     )
-    @action(detail=True, methods=["patch"], url_path="department")
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="department",
+        permission_classes=[IsAuthenticated, IsAdmin],
+    )
     def set_department(self, request, pk=None):
         user = self.get_object()
         serializer = EmployeeDepartmentUpdateSerializer(data=request.data)

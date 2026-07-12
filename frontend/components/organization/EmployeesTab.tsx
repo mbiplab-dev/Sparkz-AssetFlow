@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmptySelectOptions, EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -211,15 +212,11 @@ export function EmployeesTab() {
               ))}
             </div>
           ) : employees.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-14 text-center">
-              <span className="bg-accent-purple/20 flex size-11 items-center justify-center rounded-xl">
-                <Users className="text-accent-purple-deep size-5" />
-              </span>
-              <p className="text-ink-secondary text-sm font-medium">No employees found</p>
-              <p className="text-ink-muted text-sm">
-                Employees appear here after they sign up. This is the only place you can promote roles.
-              </p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No employees found"
+              description="Employees appear here after they sign up. This is the only place you can promote roles."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -337,11 +334,20 @@ export function EmployeesTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No department</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.id.toString()}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
+                  {departments.length === 0 ? (
+                    <EmptySelectOptions
+                      title="No departments found"
+                      description="Create departments before assigning people."
+                      actionHref="/organization"
+                      actionLabel="Create a department →"
+                    />
+                  ) : (
+                    departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id.toString()}>
+                        {d.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

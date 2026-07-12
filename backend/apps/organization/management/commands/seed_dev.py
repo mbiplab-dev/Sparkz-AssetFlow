@@ -107,6 +107,12 @@ class Command(BaseCommand):
         self._seed_holdings(managers[0] if managers else None, depts, employees)
         self._seed_maintenance(fake, managers[0] if managers else None, employees)
         self._seed_bookings(fake, employees)
+        self._seed_audits(
+            managers[0] if managers else None,
+            depts,
+            locs,
+            employees,
+        )
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -338,10 +344,17 @@ class Command(BaseCommand):
         if not r_assets:
             return
 
-        # Allocate 3–5 quantity from each catalog item to random employees/departments
-        for r in r_assets[:6]:
-            # 1 employee holding
-            emp = random.choice(employees)
+        # Prefer employee1 for the first allocation so the demo login always
+        # has something under "My allocations".
+        demo_employee = next(
+            (e for e in employees if e.email.startswith("employee1@")),
+            employees[0],
+        )
+
+        # Allocate from each catalog item to employees + departments
+        for i, r in enumerate(r_assets[:6]):
+            # First item always goes to employee1; rest are random for variety.
+            emp = demo_employee if i == 0 else random.choice(employees)
             try:
                 ra_allocate(
                     asset=r,
@@ -352,6 +365,19 @@ class Command(BaseCommand):
                 )
             except Exception:
                 pass
+            # Also give demo employee a second item when available so the list
+            # is non-trivial on first login.
+            if i == 1 and emp.id != demo_employee.id:
+                try:
+                    ra_allocate(
+                        asset=r,
+                        to_holder_type="employee",
+                        to_holder_id=demo_employee.id,
+                        quantity=1,
+                        performed_by=manager,
+                    )
+                except Exception:
+                    pass
             # 1 department holding
             dept = random.choice(depts)
             try:
@@ -440,3 +466,39 @@ class Command(BaseCommand):
                     )
                 except Exception:
                     pass  # respects the no-overlap constraint if any conflict
+
+    def _seed_audits(
+        self,
+        manager: User | None,
+        depts: list[Department],
+        locs: list[Location],
+        employees: list[User],
+    ):
+        """Open audit cycle assigned to demo employee1 for employee login testing."""
+        from apps.audits.models import AuditCycle
+        from apps.audits import services as audit_services
+
+        if AuditCycle.objects.exists():
+            return
+        if manager is None or not employees:
+            return
+
+        demo_employee = next(
+            (e for e in employees if e.email.startswith("employee1@")),
+            employees[0],
+        )
+        dept = next((d for d in depts if d.name == "Engineering"), depts[0] if depts else None)
+        loc = locs[0] if locs else None
+        today = date.today()
+        try:
+            audit_services.create_cycle(
+                name="Demo floor audit — HQ",
+                starts_on=today - timedelta(days=3),
+                ends_on=today + timedelta(days=11),
+                scope_department=dept,
+                scope_location=loc,
+                auditor_ids=[demo_employee.id],
+                created_by=manager,
+            )
+        except Exception as exc:
+            self.stdout.write(self.style.WARNING(f"Audit seed skipped: {exc}"))

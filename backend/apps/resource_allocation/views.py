@@ -60,7 +60,19 @@ class AssetViewSet(viewsets.ModelViewSet):
             qs = qs.filter(Q(name__icontains=search))
         if category:
             qs = qs.filter(category_id=category)
-        return qs
+        return qs.order_by("name")
+
+    def list(self, request, *args, **kwargs):
+        # Keep the allocate modal in sync with the main asset directory so
+        # asset managers always see every registered asset as allocatable.
+        user = request.user
+        if getattr(user, "role", None) in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
+            try:
+                services.sync_catalog_into_resource_pool(performed_by=user)
+            except Exception:
+                # Never fail the list if sync has a transient issue.
+                pass
+        return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         asset = services.register_asset(

@@ -51,10 +51,13 @@ export type Capability =
  * | maintenance.raise   |  ✓    |     ✓     |     ✓     |    ✓     |
  * | maintenance.approve |  ✓    |     ✓     |           |          |
  * | audit.manage        |  ✓    |     ✓     |           |          |
+ * | audit.view          |  ✓    |     ✓     |           |    ✓*    |
  * | reports.view        |  ✓    |     ✓     |     ✓     |          |
  * | exports.download    |  ✓    |     ✓     |     ✓     |          |
  * | activity.view_all   |  ✓    |     ✓     |     ✓     |          |
  * | activity.view       |  ✓    |     ✓     |     ✓     |    ✓     |
+ *
+ * *Employee audit.view is assignment-scoped in the UI (cycles they audit).
  */
 const ROLE_CAPS: Record<UserRole, ReadonlySet<Capability>> = {
   admin: new Set<Capability>([
@@ -124,6 +127,8 @@ const ROLE_CAPS: Record<UserRole, ReadonlySet<Capability>> = {
     "bookings.view",
     "maintenance.raise",
     "maintenance.view",
+    // Employees only see audit cycles they are assigned to as auditors.
+    "audit.view",
     "activity.view",
   ]),
 };

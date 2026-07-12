@@ -47,6 +47,31 @@ class AssetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        role = getattr(user, "role", None)
+
+        # Admin + asset managers see the full catalog.
+        # Department heads: assets in their department + all bookable resources.
+        # Employees: bookable resources (for booking) + assets tagged to their dept.
+        if role not in (UserRole.ADMIN, UserRole.ASSET_MANAGER):
+            if role == UserRole.DEPARTMENT_HEAD:
+                from apps.organization.models import Department
+
+                headed = Department.objects.filter(head=user).values_list("id", flat=True)
+                dept_ids = list(headed)
+                if user.department_id and user.department_id not in dept_ids:
+                    dept_ids.append(user.department_id)
+                qs = qs.filter(Q(department_id__in=dept_ids) | Q(is_bookable=True))
+            elif role == UserRole.EMPLOYEE:
+                # Bookable shared resources + any asset assigned to their department.
+                qs = qs.filter(
+                    Q(is_bookable=True)
+                    | Q(department_id=user.department_id)
+                    | Q(created_by=user)
+                )
+            else:
+                qs = qs.none()
+
         params = self.request.query_params
         search = params.get("search")
         status_filter = params.get("status")

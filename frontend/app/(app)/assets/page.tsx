@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, MoreHorizontal, Package, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmptySelectOptions, EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -36,9 +39,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/lib/auth/permissions";
 import { ExportButton } from "@/components/ExportButton";
 import { ApiError } from "@/lib/api/http";
+import { listHoldings, type Holding } from "@/lib/api/allocation";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import {
   ASSET_STATUS_LABELS,
@@ -53,6 +58,8 @@ import {
   type AssetCondition,
   type AssetInput,
   type AssetStatus,
+  type Category,
+  type Department,
   type Location,
 } from "@/lib/api/assets";
 import { AssetStatusBadge } from "@/components/assets/AssetStatusBadge";
@@ -80,7 +87,10 @@ const CONDITION_LABELS: Record<AssetCondition, string> = {
 };
 
 export default function AssetsPage() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === "employee";
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [myHoldings, setMyHoldings] = useState<Holding[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -117,17 +127,31 @@ export default function AssetsPage() {
           category: categoryFilter === "all" ? undefined : categoryFilter,
           is_bookable: bookableFilter === "all" ? undefined : bookableFilter,
         }),
-        listCategoriesSimple(),
-        listDepartmentsSimple(),
+        // Soft-fail master data so a permission issue never blanks the asset list.
+        listCategoriesSimple().catch(() => [] as Category[]),
+        listDepartmentsSimple().catch(() => [] as Department[]),
         listLocations().catch(() => [] as Location[]),
-      ]).then(([assetList, cats, depts, locs]) => {
-        setAssets(assetList);
-        setCategories(cats.map((c) => ({ id: c.id, name: c.name })));
-        setDepartments(depts.map((d) => ({ id: d.id, name: d.name })));
-        setLocations(locs);
-        return assetList;
+        // Employee: real quantity holdings (what is actually assigned to them).
+        isEmployee
+          ? listHoldings().catch(() => [] as Holding[])
+          : Promise.resolve([] as Holding[]),
+      ]).then(([assetList, cats, depts, locs, holdings]) => {
+        setAssets(Array.isArray(assetList) ? assetList : []);
+        setCategories(
+          (Array.isArray(cats) ? cats : []).map((c) => ({ id: c.id, name: c.name })),
+        );
+        setDepartments(
+          (Array.isArray(depts) ? depts : []).map((d) => ({ id: d.id, name: d.name })),
+        );
+        setLocations(Array.isArray(locs) ? locs : []);
+        setMyHoldings(
+          (Array.isArray(holdings) ? holdings : []).filter(
+            (h) => h.quantity > 0 && h.holder_type === "employee",
+          ),
+        );
+        return Array.isArray(assetList) ? assetList : [];
       }),
-    [search, statusFilter, categoryFilter, bookableFilter],
+    [search, statusFilter, categoryFilter, bookableFilter, isEmployee],
   );
 
   function openRegister() {
@@ -204,10 +228,12 @@ export default function AssetsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h2 className="font-display text-ink text-xl font-bold tracking-tight sm:text-2xl">
-            Assets
+            {isEmployee ? "My assets" : "Assets"}
           </h2>
           <p className="text-ink-muted mt-0.5 text-sm">
-            Register and track assets through their full lifecycle.
+            {isEmployee
+              ? "What is allocated to you, plus shared/department assets you can book or reference."
+              : "Register and track assets through their full lifecycle."}
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
@@ -220,6 +246,65 @@ export default function AssetsPage() {
           )}
         </div>
       </div>
+
+      {isEmployee && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="font-display text-base font-semibold">
+              Allocated to you
+            </CardTitle>
+            <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Link href="/allocation">
+                Manage returns
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : myHoldings.length === 0 ? (
+              <p className="text-ink-muted text-sm">
+                No quantity is currently allocated to your account. When a manager assigns you
+                equipment, it appears here and on{" "}
+                <Link href="/allocation" className="text-primary font-medium hover:underline">
+                  Allocation
+                </Link>
+                .
+              </p>
+            ) : (
+              <ul className="divide-border divide-y rounded-md border">
+                {myHoldings.map((h) => (
+                  <li
+                    key={h.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-ink truncate text-sm font-medium">{h.asset_name}</p>
+                      <p className="text-ink-muted text-xs">Assigned holding · return from Allocation</p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 tabular-nums">
+                      ×{h.quantity}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {isEmployee && (
+        <div className="flex items-center gap-2">
+          <h3 className="font-display text-ink text-sm font-semibold">
+            Directory (bookable & department)
+          </h3>
+          <span className="text-ink-faint text-xs">Not the same as your personal allocations</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
         <div className="relative min-w-0 sm:col-span-2 lg:col-span-1 lg:min-w-[16rem] lg:flex-1">
@@ -250,11 +335,20 @@ export default function AssetsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id.toString()}>
-                {c.name}
-              </SelectItem>
-            ))}
+            {categories.length === 0 ? (
+              <EmptySelectOptions
+                title="No categories found"
+                description="Create categories in Organization setup."
+                actionHref="/organization"
+                actionLabel="Create a category →"
+              />
+            ) : (
+              categories.map((c) => (
+                <SelectItem key={c.id} value={c.id.toString()}>
+                  {c.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
         <Select value={bookableFilter} onValueChange={(v) => setBookableFilter(v as "all" | "true" | "false")}>
@@ -278,23 +372,17 @@ export default function AssetsPage() {
               ))}
             </div>
           ) : assets.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-14 text-center">
-              <span className="bg-accent-green/15 flex size-11 items-center justify-center rounded-xl">
-                <Package className="text-accent-green size-5" />
-              </span>
-              <p className="text-ink-secondary text-sm font-medium">No assets found</p>
-              <p className="text-ink-muted text-sm">
-                {canRegister
+            <EmptyState
+              icon={Package}
+              title="No assets found"
+              description={
+                canRegister
                   ? "Register your first asset to start tracking it through its lifecycle."
-                  : "No assets match your current filters."}
-              </p>
-              {canRegister && (
-                <Button onClick={openRegister} variant="outline" className="mt-1 rounded-full">
-                  <PackagePlus />
-                  Register Asset
-                </Button>
-              )}
-            </div>
+                  : "No assets match your current filters."
+              }
+              actionLabel={canRegister ? "Register Asset" : undefined}
+              onAction={canRegister ? openRegister : undefined}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -418,11 +506,20 @@ export default function AssetsPage() {
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
+                  {categories.length === 0 ? (
+                    <EmptySelectOptions
+                      title="No categories found"
+                      description="Register needs at least one category."
+                      actionHref="/organization"
+                      actionLabel="Create a category →"
+                    />
+                  ) : (
+                    categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -465,11 +562,20 @@ export default function AssetsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No department</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.id.toString()}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
+                  {departments.length === 0 ? (
+                    <EmptySelectOptions
+                      title="No departments found"
+                      description="Optional — create departments in Organization."
+                      actionHref="/organization"
+                      actionLabel="Create a department →"
+                    />
+                  ) : (
+                    departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id.toString()}>
+                        {d.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

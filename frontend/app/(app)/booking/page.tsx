@@ -147,9 +147,18 @@ export default function BookingPage() {
               ))}
             </div>
           ) : assets.length === 0 ? (
-            <p className="text-ink-faint px-2 py-6 text-center text-xs">
-              No bookable resources yet. Mark assets as bookable in the Assets tab.
-            </p>
+            <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
+              <p className="text-ink-secondary text-sm font-medium">No bookable resources</p>
+              <p className="text-ink-muted text-xs">
+                Mark assets as &quot;shared / bookable&quot; when registering or editing them.
+              </p>
+              <a
+                href="/assets"
+                className="text-primary text-xs font-semibold hover:underline"
+              >
+                Go to Assets →
+              </a>
+            </div>
           ) : (
             assets.map((a) => {
               const active = selected?.id === a.id;

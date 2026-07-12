@@ -73,6 +73,11 @@ export default function MaintenancePage() {
   const [resolveFor, setResolveFor] = useState<MaintenanceRequest | null>(null);
   const [actionPending, setActionPending] = useState<number | null>(null);
 
+  const requestList = useMemo(
+    () => (Array.isArray(requests) ? requests : []),
+    [requests],
+  );
+
   const counts = useMemo(() => {
     const c: Record<MaintenanceStatus, number> = {
       pending: 0,
@@ -83,9 +88,11 @@ export default function MaintenancePage() {
       resolved: 0,
       cancelled: 0,
     };
-    for (const r of requests) c[r.status]++;
+    for (const r of requestList) {
+      if (r?.status && r.status in c) c[r.status]++;
+    }
     return c;
-  }, [requests]);
+  }, [requestList]);
 
   const grouped = useMemo(() => {
     const g: Record<MaintenanceStatus, MaintenanceRequest[]> = {
@@ -97,11 +104,13 @@ export default function MaintenancePage() {
       resolved: [],
       cancelled: [],
     };
-    for (const r of requests) g[r.status].push(r);
+    for (const r of requestList) {
+      if (r?.status && r.status in g) g[r.status].push(r);
+    }
     // Merge assigned into approved column for display (workflow: approved → assigned → in_progress)
     g.approved = [...g.approved, ...g.assigned];
     return g;
-  }, [requests]);
+  }, [requestList]);
 
   async function handleApprove(req: MaintenanceRequest) {
     setActionPending(req.id);

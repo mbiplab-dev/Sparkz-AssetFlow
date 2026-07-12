@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { refreshAccessToken } from "@/lib/api/client";
-import { API_BASE_URL, ApiError } from "@/lib/api/http";
+import { ApiError, getApiBaseUrl } from "@/lib/api/http";
 import { clearAccessToken, getAccessToken } from "@/lib/auth/tokenStorage";
 
 export type ExportResource =
@@ -18,8 +18,11 @@ export type ExportResource =
  * httpOnly cookie and retry, then give up (clear local access token).
  */
 async function authFetchBlob(path: string): Promise<Response> {
+  const base = getApiBaseUrl();
+  const url = path.startsWith("http") ? path : `${base}${path.endsWith("/") ? path : `${path}/`}`;
+
   async function once(token: string | null): Promise<Response> {
-    return fetch(`${API_BASE_URL}${path}`, {
+    return fetch(url, {
       method: "GET",
       credentials: "include",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
