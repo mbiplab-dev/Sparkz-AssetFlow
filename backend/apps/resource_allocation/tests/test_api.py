@@ -304,3 +304,140 @@ class AllocationRequestApiTests(APITestCase):
         self.client.force_authenticate(self.head_a)
         cancel_response = self.client.post(f"/api/resources/requests/{request_id}/cancel/")
         self.assertEqual(cancel_response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AllocateAndReturnApiTests(APITestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(name="Vehicles")
+        self.manager = User.objects.create_user(
+            email="mgr12@example.com",
+            password="pw",
+            full_name="Manager",
+            role=UserRole.ASSET_MANAGER,
+        )
+        self.dept_a = Department.objects.create(name="Dept A")
+        self.head_a = User.objects.create_user(
+            email="head-a12@example.com",
+            password="pw",
+            full_name="Head A",
+            role=UserRole.DEPARTMENT_HEAD,
+            department=self.dept_a,
+        )
+        self.dept_a.head = self.head_a
+        self.dept_a.save()
+        self.employee_a = User.objects.create_user(
+            email="emp-a12@example.com",
+            password="pw",
+            full_name="Emp A",
+            department=self.dept_a,
+        )
+        self.employee_other = User.objects.create_user(
+            email="emp-other12@example.com",
+            password="pw",
+            full_name="Emp Other",
+        )
+        self.asset = services.register_asset(
+            name="Cars",
+            category=self.category,
+            total_quantity=10,
+            condition="good",
+            location="Lot A",
+            is_bookable=False,
+            created_by=self.manager,
+        )
+
+    def test_asset_manager_can_push_allocate_with_no_check(self):
+        self.client.force_authenticate(self.manager)
+        response = self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "department",
+                "to_holder_id": self.dept_a.id,
+                "quantity": 4,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+
+    def test_department_head_can_sub_allocate_to_own_employee(self):
+        self.client.force_authenticate(self.manager)
+        self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "department",
+                "to_holder_id": self.dept_a.id,
+                "quantity": 4,
+            },
+        )
+
+        self.client.force_authenticate(self.head_a)
+        response = self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "employee",
+                "to_holder_id": self.employee_a.id,
+                "quantity": 2,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+
+    def test_department_head_cannot_allocate_to_employee_outside_department(self):
+        self.client.force_authenticate(self.manager)
+        self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "department",
+                "to_holder_id": self.dept_a.id,
+                "quantity": 4,
+            },
+        )
+
+        self.client.force_authenticate(self.head_a)
+        response = self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "employee",
+                "to_holder_id": self.employee_other.id,
+                "quantity": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_employee_cannot_use_allocate_endpoint(self):
+        self.client.force_authenticate(self.employee_a)
+        response = self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "employee",
+                "to_holder_id": self.employee_a.id,
+                "quantity": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_department_head_can_return_quantity_to_manager_pool(self):
+        self.client.force_authenticate(self.manager)
+        self.client.post(
+            "/api/resources/allocate/",
+            {
+                "asset": self.asset.id,
+                "to_holder_type": "department",
+                "to_holder_id": self.dept_a.id,
+                "quantity": 4,
+            },
+        )
+
+        self.client.force_authenticate(self.head_a)
+        response = self.client.post(
+            "/api/resources/return/",
+            {
+                "asset": self.asset.id,
+                "quantity": 2,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)

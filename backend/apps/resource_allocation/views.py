@@ -4,19 +4,26 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from apps.authentication.models import UserRole
+from apps.authentication.models import User, UserRole
 from apps.organization.models import Department
 
 from . import services
 from .models import MANAGER_HOLDER_ID, AllocationRequest, Asset, HolderType, Holding, Transfer
-from .permissions import IsAssetManager, IsAssetManagerOrDepartmentHead
+from .permissions import (
+    IsAssetManager,
+    IsAssetManagerOrDepartmentHead,
+    IsDepartmentHeadOrEmployee,
+)
 from .serializers import (
     AdjustStockSerializer,
+    AllocateSerializer,
     AllocationRequestSerializer,
     AssetSerializer,
     FulfillRequestSerializer,
     HoldingSerializer,
+    ReturnSerializer,
     TransferSerializer,
 )
 
@@ -303,3 +310,93 @@ class AllocationRequestViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(exc)}, status=403)
         allocation_request.refresh_from_db()
         return Response(AllocationRequestSerializer(allocation_request).data)
+
+
+class AllocateView(APIView):
+    """
+    POST asset/to_holder_type/to_holder_id/quantity.
+
+    Asset Manager: pushes from the unallocated manager pool (no approval check).
+    Department Head: sub-allocates from their own department's holding to one
+    of their own employees (to_holder_type must be 'employee').
+    """
+
+    permission_classes = [IsAuthenticated, IsAssetManagerOrDepartmentHead]
+
+    def post(self, request):
+        serializer = AllocateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if request.user.role == UserRole.ASSET_MANAGER:
+            try:
+                services.allocate(
+                    asset=data["asset"],
+                    to_holder_type=data["to_holder_type"],
+                    to_holder_id=data["to_holder_id"],
+                    quantity=data["quantity"],
+                    performed_by=request.user,
+                )
+            except services.InsufficientQuantityError as exc:
+                return Response({"detail": str(exc)}, status=400)
+            return Response({"detail": "Allocated."})
+
+        # Department Head
+        if data["to_holder_type"] != HolderType.EMPLOYEE:
+            return Response(
+                {"detail": "A Department Head can only sub-allocate to an employee."},
+                status=400,
+            )
+        dept = Department.objects.filter(head=request.user).first()
+        if not dept:
+            return Response({"detail": "You do not head a department."}, status=403)
+        try:
+            employee = User.objects.get(pk=data["to_holder_id"])
+        except User.DoesNotExist:
+            return Response({"detail": "Employee not found."}, status=400)
+        try:
+            services.sub_allocate(
+                asset=data["asset"],
+                department=dept,
+                employee=employee,
+                quantity=data["quantity"],
+                performed_by=request.user,
+            )
+        except (services.InvalidHolderError, services.InsufficientQuantityError) as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response({"detail": "Allocated."})
+
+
+class ReturnView(APIView):
+    """
+    POST asset/quantity. Department Head returns from their department's
+    holding; Employee returns from their own holding. Both go back to the
+    unallocated manager pool.
+    """
+
+    permission_classes = [IsAuthenticated, IsDepartmentHeadOrEmployee]
+
+    def post(self, request):
+        serializer = ReturnSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if request.user.role == UserRole.DEPARTMENT_HEAD:
+            dept = Department.objects.filter(head=request.user).first()
+            if not dept:
+                return Response({"detail": "You do not head a department."}, status=403)
+            from_holder_type, from_holder_id = HolderType.DEPARTMENT, dept.id
+        else:
+            from_holder_type, from_holder_id = HolderType.EMPLOYEE, request.user.id
+
+        try:
+            services.return_quantity(
+                asset=data["asset"],
+                from_holder_type=from_holder_type,
+                from_holder_id=from_holder_id,
+                quantity=data["quantity"],
+                performed_by=request.user,
+            )
+        except services.InsufficientQuantityError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response({"detail": "Returned."})
