@@ -1,6 +1,8 @@
 "use client";
 
-/** Pure-SVG chart primitives for Reports v2 (no chart library). */
+import { useId } from "react";
+
+/** Pure-SVG / CSS chart primitives for Reports (no chart library). */
 
 const PALETTE = [
   "#0075de",
@@ -34,7 +36,7 @@ function toSlices(data: Record<string, number> | { label: string; value: number 
   }));
 }
 
-/** Donut / pie chart for status breakdowns. */
+/** Donut chart for status breakdowns. */
 export function DonutChart({
   data,
   size = 180,
@@ -94,7 +96,7 @@ export function DonutChart({
           x={cx}
           y={cy - 4}
           textAnchor="middle"
-          className="fill-ink text-lg font-bold"
+          className="fill-ink font-bold"
           style={{ fontSize: 18 }}
         >
           {total}
@@ -125,10 +127,13 @@ export function DonutChart({
   );
 }
 
-/** Vertical bar chart for category / department counts. */
+/**
+ * Vertical bar chart — uses pixel heights (not %) so bars render correctly
+ * inside flex containers.
+ */
 export function VerticalBarChart({
   data,
-  height = 160,
+  height = 180,
 }: {
   data: { label: string; value: number }[];
   height?: number;
@@ -137,38 +142,40 @@ export function VerticalBarChart({
     return <p className="text-ink-muted text-sm">No data yet.</p>;
   }
   const max = Math.max(1, ...data.map((d) => d.value));
+  // Reserve space for the value label above each bar.
+  const plotHeight = Math.max(80, height - 28);
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-end gap-1.5 sm:gap-2" style={{ height }}>
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full items-end gap-1.5 sm:gap-2" style={{ height: plotHeight }}>
         {data.map((d, i) => {
-          const pct = Math.max(4, Math.round((d.value / max) * 100));
+          const barPx = Math.max(6, Math.round((d.value / max) * plotHeight));
           return (
             <div
               key={d.label}
-              className="group flex min-w-0 flex-1 flex-col items-center justify-end gap-1"
+              className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
               title={`${d.label}: ${d.value}`}
             >
-              <span className="text-ink-muted text-[10px] tabular-nums opacity-0 transition-opacity group-hover:opacity-100 sm:opacity-100">
+              <span className="text-ink-secondary text-[11px] font-medium tabular-nums">
                 {d.value}
               </span>
               <div
-                className="w-full max-w-10 rounded-t-md transition-all"
+                className="w-full max-w-12 rounded-t-md transition-all group-hover:opacity-90"
                 style={{
-                  height: `${pct}%`,
+                  height: `${barPx}px`,
                   background: PALETTE[i % PALETTE.length],
-                  minHeight: 4,
+                  minHeight: 6,
                 }}
               />
             </div>
           );
         })}
       </div>
-      <div className="flex gap-1.5 sm:gap-2">
+      <div className="flex w-full gap-1.5 sm:gap-2">
         {data.map((d) => (
           <span
             key={d.label}
-            className="text-ink-faint min-w-0 flex-1 truncate text-center text-[10px]"
+            className="text-ink-muted min-w-0 flex-1 truncate text-center text-[10px] leading-tight sm:text-[11px]"
             title={d.label}
           >
             {d.label}
@@ -179,21 +186,62 @@ export function VerticalBarChart({
   );
 }
 
-/** Area chart for hourly booking heatmap. */
+/** Horizontal bar chart — clearer for many long labels (fallback layout). */
+export function HorizontalBarChart({
+  data,
+}: {
+  data: { label: string; value: number }[];
+}) {
+  if (data.length === 0) {
+    return <p className="text-ink-muted text-sm">No data yet.</p>;
+  }
+  const max = Math.max(1, ...data.map((d) => d.value));
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {data.map((d, i) => {
+        const pct = Math.max(4, Math.round((d.value / max) * 100));
+        return (
+          <div key={d.label} className="flex items-center gap-3">
+            <span className="text-ink w-28 shrink-0 truncate text-xs sm:w-36 sm:text-sm" title={d.label}>
+              {d.label}
+            </span>
+            <div className="bg-muted relative h-3 min-w-0 flex-1 overflow-hidden rounded-full">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{
+                  width: `${pct}%`,
+                  background: PALETTE[i % PALETTE.length],
+                }}
+              />
+            </div>
+            <span className="text-ink-muted w-8 shrink-0 text-right text-xs tabular-nums">
+              {d.value}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Area chart for hourly booking load. */
 export function AreaChart({
   data,
-  height = 140,
+  height = 160,
 }: {
   data: { hour: number; count: number }[];
   height?: number;
 }) {
+  const gradId = useId().replace(/:/g, "");
+
   if (data.length === 0) {
     return <p className="text-ink-muted text-sm">No booking data yet.</p>;
   }
 
   const width = 600;
-  const padX = 8;
-  const padY = 12;
+  const padX = 12;
+  const padY = 16;
   const max = Math.max(1, ...data.map((d) => d.count));
   const n = data.length;
 
@@ -213,24 +261,46 @@ export function AreaChart({
         className="h-auto w-full"
         preserveAspectRatio="none"
         style={{ height }}
+        role="img"
+        aria-label="Booking load by hour"
       >
         <defs>
-          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#0075de" stopOpacity="0.35" />
             <stop offset="100%" stopColor="#0075de" stopOpacity="0.02" />
           </linearGradient>
         </defs>
-        <path d={area} fill="url(#areaFill)" />
-        <path d={line} fill="none" stroke="#0075de" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-        {points.map((p) => (
-          <circle key={p.hour} cx={p.x} cy={p.y} r={2.5} fill="#0075de">
-            <title>
-              {p.hour}:00 — {p.count} bookings
-            </title>
-          </circle>
-        ))}
+        {/* baseline grid */}
+        <line
+          x1={padX}
+          y1={height - padY}
+          x2={width - padX}
+          y2={height - padY}
+          stroke="#e6e6e6"
+          strokeWidth="1"
+          vectorEffect="non-scaling-stroke"
+        />
+        <path d={area} fill={`url(#${gradId})`} />
+        <path
+          d={line}
+          fill="none"
+          stroke="#0075de"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        {points.map((p) =>
+          p.count > 0 ? (
+            <circle key={p.hour} cx={p.x} cy={p.y} r={3.5} fill="#0075de" stroke="#fff" strokeWidth="1.5">
+              <title>
+                {p.hour}:00 — {p.count} bookings
+              </title>
+            </circle>
+          ) : null,
+        )}
       </svg>
-      <div className="text-ink-faint mt-1 flex justify-between text-[10px] tabular-nums">
+      <div className="text-ink-faint mt-1 flex justify-between px-1 text-[10px] tabular-nums">
         <span>0:00</span>
         <span>6:00</span>
         <span>12:00</span>

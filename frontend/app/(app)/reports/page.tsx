@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleGate, Can } from "@/components/rbac/RoleGate";
-import { AreaChart, DonutChart, VerticalBarChart, humanize } from "@/components/reports/charts";
+import {
+  AreaChart,
+  DonutChart,
+  HorizontalBarChart,
+  VerticalBarChart,
+  humanize,
+} from "@/components/reports/charts";
 import {
   downloadClientCsv,
   downloadCsvWithToast,
@@ -223,7 +229,7 @@ export default function ReportsPage() {
               <DonutChart data={reports.maintenance_by_status} />
             </ReportCard>
             <ReportCard title="Assets by category">
-              <VerticalBarChart
+              <HorizontalBarChart
                 data={reports.assets_by_category.map((d) => ({
                   label: d.category,
                   value: d.count,
@@ -231,7 +237,7 @@ export default function ReportsPage() {
               />
             </ReportCard>
             <ReportCard title="Assets by department">
-              <VerticalBarChart
+              <HorizontalBarChart
                 data={reports.assets_by_department.map((d) => ({
                   label: d.department,
                   value: d.count,
@@ -239,7 +245,7 @@ export default function ReportsPage() {
               />
             </ReportCard>
             <ReportCard title="Maintenance by category">
-              <VerticalBarChart
+              <HorizontalBarChart
                 data={reports.maintenance_by_category.map((d) => ({
                   label: d.category,
                   value: d.count,
@@ -248,6 +254,7 @@ export default function ReportsPage() {
             </ReportCard>
             <ReportCard title="Top used assets (by maintenance)">
               <VerticalBarChart
+                height={200}
                 data={reports.top_used_assets.map((a) => ({
                   label: a.asset_tag,
                   value: a.count,

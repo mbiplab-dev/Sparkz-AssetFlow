@@ -185,9 +185,13 @@ class Command(BaseCommand):
                     "is_active": True,
                 },
             )
-            if created:
-                u.set_password("Demo@12345")
-                u.save()
+            # Always re-apply known demo password so login quick-buttons work.
+            u.set_password("Demo@12345")
+            u.role = UserRole.ASSET_MANAGER
+            u.status = UserStatus.ACTIVE
+            u.is_active = True
+            u.department = dept
+            u.save()
             managers.append(u)
 
         # One department_head per department (skip Engineering & Facilities to
@@ -206,9 +210,13 @@ class Command(BaseCommand):
                     "is_active": True,
                 },
             )
-            if created:
-                u.set_password("Demo@12345")
-                u.save()
+            u.set_password("Demo@12345")
+            u.role = UserRole.DEPARTMENT_HEAD
+            u.status = UserStatus.ACTIVE
+            u.is_active = True
+            u.department = dept
+            u.save()
+            if created or dept.head_id != u.id:
                 dept.head = u
                 dept.save(update_fields=["head", "updated_at"])
             heads.append(u)
@@ -228,9 +236,11 @@ class Command(BaseCommand):
                     "phone": fake.msisdn()[:12],
                 },
             )
-            if created:
-                u.set_password("Demo@12345")
-                u.save()
+            u.set_password("Demo@12345")
+            u.role = UserRole.EMPLOYEE
+            u.status = UserStatus.ACTIVE
+            u.is_active = True
+            u.save()
             employees.append(u)
 
         return managers, heads, employees

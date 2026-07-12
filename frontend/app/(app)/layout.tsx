@@ -34,12 +34,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     NAV_ITEMS.find(({ href }) => pathname === href || pathname.startsWith(`${href}/`))?.label ??
     "AssetFlow";
 
+  // Fixed viewport shell: only <main> scrolls. Sidebar stays put.
   return (
-    <div className="flex min-h-dvh min-w-0 flex-1 overflow-x-hidden">
+    <div className="flex h-dvh min-h-0 w-full min-w-0 flex-1 overflow-hidden">
       <AppSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <AppHeader title={title} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6">
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6">
           {children}
         </main>
       </div>

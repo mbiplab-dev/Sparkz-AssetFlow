@@ -124,14 +124,14 @@ export function AppHeader({ title }: { title: string }) {
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent
           side="left"
-          className="bg-sidebar w-[min(18rem,85vw)] gap-0 p-0 sm:max-w-xs"
+          className="bg-sidebar w-[min(18rem,85vw)] gap-0 overflow-hidden p-0 sm:max-w-xs"
           showCloseButton
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation</SheetTitle>
             <SheetDescription>Primary app navigation</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full flex-col">
+          <div className="flex h-full flex-col overflow-hidden">
             <AppSidebarBrand onNavigate={() => setMobileNavOpen(false)} />
             <AppSidebarNav onNavigate={() => setMobileNavOpen(false)} />
           </div>

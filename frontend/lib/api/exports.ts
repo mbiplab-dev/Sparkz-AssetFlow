@@ -1,6 +1,7 @@
 import { toast } from "sonner";
+import { refreshAccessToken } from "@/lib/api/client";
 import { API_BASE_URL, ApiError } from "@/lib/api/http";
-import { getAccessToken } from "@/lib/auth/tokenStorage";
+import { clearAccessToken, getAccessToken } from "@/lib/auth/tokenStorage";
 
 export type ExportResource =
   | "departments"
@@ -12,23 +13,44 @@ export type ExportResource =
   | "maintenance";
 
 /**
+ * Authenticated binary fetch for CSV exports.
+ * Mirrors `authRequest`: attach Bearer token, on 401 refresh once via the
+ * httpOnly cookie and retry, then give up (clear local access token).
+ */
+async function authFetchBlob(path: string): Promise<Response> {
+  async function once(token: string | null): Promise<Response> {
+    return fetch(`${API_BASE_URL}${path}`, {
+      method: "GET",
+      credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  }
+
+  let response = await once(getAccessToken());
+  if (response.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      response = await once(newToken);
+    } else {
+      clearAccessToken();
+    }
+  }
+  return response;
+}
+
+/**
  * Download a server-generated CSV for the given resource.
  * Uses raw fetch (not JSON client) so we can save the blob attachment.
  */
 export async function downloadCsv(resource: ExportResource | string): Promise<void> {
-  const token = getAccessToken();
-  const response = await fetch(`${API_BASE_URL}/api/dashboard/export/${resource}/`, {
-    method: "GET",
-    credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await authFetchBlob(`/api/dashboard/export/${resource}/`);
 
   if (!response.ok) {
     let data: unknown = null;
     try {
       data = await response.json();
     } catch {
-      // non-JSON body
+      // non-JSON body (plain text error)
     }
     throw new ApiError(response.status, data);
   }
@@ -45,6 +67,19 @@ export async function downloadCsvWithToast(resource: ExportResource | string): P
     toast.success(`Downloaded ${resource} CSV`);
   } catch (err) {
     const msg = err instanceof ApiError ? err.message : "Download failed";
+    // Surface auth failures clearly so the user re-logs in if refresh cookie is gone.
+    if (err instanceof ApiError && err.status === 401) {
+      toast.error("Session expired", {
+        description: "Please log in again to export data.",
+      });
+      return;
+    }
+    if (err instanceof ApiError && err.status === 403) {
+      toast.error("Not allowed", {
+        description: "Your role cannot export this dataset.",
+      });
+      return;
+    }
     toast.error("Export failed", { description: msg });
   }
 }

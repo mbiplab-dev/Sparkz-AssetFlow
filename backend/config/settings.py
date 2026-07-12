@@ -26,14 +26,20 @@ environ.Env.read_env(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# Default is long enough for HS256 JWT (≥32 bytes). Override in production via env.
 SECRET_KEY = env(
-    "SECRET_KEY", default="django-insecure-6a)al+vsghbit)4mus((37u^5_c1a8k-*2l$l@(p9h5kjo^5m@"
+    "SECRET_KEY",
+    default="django-insecure-assetflow-dev-key-change-me-32b+",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = []
+# Comma-separated list in env; defaults allow local dev + Django test client.
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1", "0.0.0.0", "testserver"],
+)
 
 
 # Application definition

@@ -116,7 +116,9 @@ function AssetEditForm({
       onOpenChange(false);
     } catch (err) {
       toast.error("Failed to update asset", {
-        description: err instanceof ApiError ? err.message : undefined,
+        description:
+          err instanceof ApiError ? err.message : "Something went wrong. Please try again.",
+        duration: 6000,
       });
     } finally {
       setSaving(false);

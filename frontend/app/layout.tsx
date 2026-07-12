@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full font-sans antialiased">
-      <body className="flex min-h-full flex-col overflow-x-hidden">
+    <html lang="en" className="h-full overflow-hidden font-sans antialiased">
+      <body className="flex h-full min-h-0 flex-col overflow-hidden">
         <AuthProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </AuthProvider>

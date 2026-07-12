@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Building2, Package, Shield, User } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,48 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api/http";
 import { validateEmail, validatePassword } from "@/lib/auth/validation";
+import { cn } from "@/lib/utils";
+
+/** Seeded accounts from `make seed-dev` / `make init`. */
+const DEMO_ACCOUNTS = [
+  {
+    id: "admin",
+    label: "Demo Admin",
+    description: "Full org setup & all modules",
+    email: "admin@assetflow.local",
+    password: "Admin@12345",
+    icon: Shield,
+    accent: "border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary",
+  },
+  {
+    id: "asset_manager",
+    label: "Demo Asset Manager",
+    description: "Register, allocate, maintenance",
+    email: "manager.eng@assetflow.local",
+    password: "Demo@12345",
+    icon: Package,
+    accent: "border-accent-teal/40 bg-accent-teal/10 hover:bg-accent-teal/15 text-accent-teal",
+  },
+  {
+    id: "department_head",
+    label: "Demo Dept Head",
+    description: "Dept approvals & bookings",
+    email: "head.it@assetflow.local",
+    password: "Demo@12345",
+    icon: Building2,
+    accent:
+      "border-accent-purple-deep/25 bg-accent-purple/15 hover:bg-accent-purple/25 text-accent-purple-deep",
+  },
+  {
+    id: "employee",
+    label: "Demo Employee",
+    description: "Own assets, book, raise requests",
+    email: "employee1@assetflow.local",
+    password: "Demo@12345",
+    icon: User,
+    accent: "border-accent-orange/35 bg-accent-orange/10 hover:bg-accent-orange/15 text-accent-orange-deep",
+  },
+] as const;
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -28,27 +71,27 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
 
-  const DEMO_EMAIL = "admin@assetflow.local";
-  const DEMO_PASSWORD = "Admin@12345";
-
-  async function handleDemoLogin() {
+  async function handleDemoLogin(account: (typeof DEMO_ACCOUNTS)[number]) {
     setError(null);
     setFieldErrors({});
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
+    setEmail(account.email);
+    setPassword(account.password);
+    setDemoBusy(account.id);
     setIsSubmitting(true);
     try {
-      await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      await login({ email: account.email, password: account.password });
       router.push("/dashboard");
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : "Demo login failed. The seeded admin may not exist yet — run `make init-db`.",
+          : "Demo login failed. Seed data may be missing — run `make init` or `make seed-dev`.",
       );
     } finally {
       setIsSubmitting(false);
+      setDemoBusy(null);
     }
   }
 
@@ -87,7 +130,7 @@ export default function LoginPage() {
           Log in
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Welcome back. Enter your email and password.
+          Welcome back. Enter your email and password, or pick a demo role.
         </CardDescription>
       </CardHeader>
 
@@ -155,24 +198,55 @@ export default function LoginPage() {
               disabled={isSubmitting}
               className="mt-1 h-10 w-full rounded-full text-sm font-medium"
             >
-              {isSubmitting ? "Logging in…" : "Log in"}
+              {isSubmitting && !demoBusy ? "Logging in…" : "Log in"}
             </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={handleDemoLogin}
-              className="h-10 w-full rounded-full text-sm font-medium"
-            >
-              Continue as demo admin
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              Uses <span className="font-mono">{DEMO_EMAIL}</span> — seeded on first{" "}
-              <span className="font-mono">make init-db</span>.
-            </p>
           </FieldGroup>
         </form>
+
+        <div className="mt-5">
+          <div className="mb-2.5 flex items-center gap-2">
+            <div className="bg-border h-px flex-1" />
+            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Quick demo login
+            </span>
+            <div className="bg-border h-px flex-1" />
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {DEMO_ACCOUNTS.map((account) => {
+              const Icon = account.icon;
+              const busy = demoBusy === account.id;
+              return (
+                <button
+                  key={account.id}
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleDemoLogin(account)}
+                  className={cn(
+                    "flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                    "disabled:cursor-not-allowed disabled:opacity-60",
+                    account.accent,
+                  )}
+                >
+                  <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-white/70">
+                    <Icon className="size-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="text-ink block text-sm font-semibold">
+                      {busy ? "Signing in…" : account.label}
+                    </span>
+                    <span className="text-ink-muted block text-[11px] leading-snug">
+                      {account.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-muted-foreground mt-2 text-center text-[11px]">
+            Requires seeded data — run <span className="font-mono">make init</span> or{" "}
+            <span className="font-mono">make seed-dev</span>.
+          </p>
+        </div>
       </CardContent>
 
       <CardFooter className="flex flex-col items-stretch gap-3 border-t border-border bg-transparent px-4 py-4 sm:px-6 sm:py-5">
