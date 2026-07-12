@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.assets",
     "apps.dashboard",
     "apps.resource_allocation",
+    "apps.maintenance",
 ]
 
 MIDDLEWARE = [
@@ -160,6 +161,10 @@ SPECTACULAR_SETTINGS = {
         {
             "name": "Assets / Locations",
             "description": "Physical locations for assets and audit scoping.",
+        },
+        {
+            "name": "Maintenance",
+            "description": "Maintenance request workflow: pending → approved/rejected → in progress → resolved (Screen 6).",
         },
     ],
 }
